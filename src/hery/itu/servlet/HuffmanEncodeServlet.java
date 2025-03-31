@@ -21,13 +21,15 @@ public class HuffmanEncodeServlet extends HttpServlet {
     private Map<String, String> getHuffmanDictionary() {
         Map<String, String> dictionary = new HashMap<>();
         Base base = new Base();
-
+    
         try (Connection connection = base.getConnection();
              PreparedStatement statement = connection.prepareStatement("SELECT caractere, code FROM dico");
              ResultSet resultSet = statement.executeQuery()) {
-
+    
             while (resultSet.next()) {
-                dictionary.put(resultSet.getString("caractere"), resultSet.getString("code"));
+                String caractere = resultSet.getString("caractere");
+                String code = resultSet.getString("code"); // Récupérer directement la valeur en tant que String
+                dictionary.put(caractere, code);
             }
         } catch (SQLException e) {
             System.err.println("❌ Erreur chargement Huffman: " + e.getMessage());
