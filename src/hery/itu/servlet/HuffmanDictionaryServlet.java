@@ -25,20 +25,23 @@ public class HuffmanDictionaryServlet extends HttpServlet {
     }
 
     private void loadDictionaryFromDB() {
-        huffmanDictionary.clear(); // Nettoyer avant de recharger
+        huffmanDictionary.clear();
         Base database = new Base();
         Connection connection = database.getConnection();
+
         if (connection == null) {
-            System.err.println("❌ Erreur: Impossible d'établir la connexion à la base.");
+            System.err.println("❌ Impossible de se connecter à la base.");
             return;
         }
 
         String sql = "SELECT caractere, code FROM dico";
+
         try (PreparedStatement statement = connection.prepareStatement(sql);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
                 String character = resultSet.getString("caractere");
-                String huffmanCode = resultSet.getString("code");
+                String huffmanCode = resultSet.getString("code"); // BIT VARYING est récupéré comme String
+
                 huffmanDictionary.put(character, huffmanCode);
             }
         } catch (SQLException e) {
@@ -62,8 +65,13 @@ public class HuffmanDictionaryServlet extends HttpServlet {
         String huffmanCode = request.getParameter("huffmanCode");
 
         if (character == null || huffmanCode == null || character.trim().isEmpty() || huffmanCode.trim().isEmpty()) {
-            System.err.println("❌ Caractère ou code Huffman vide !");
             response.sendRedirect("insertDictionary?error=empty");
+            return;
+        }
+
+        // Vérifier que `huffmanCode` est bien une séquence binaire valide
+        if (!huffmanCode.matches("[01]+")) {
+            response.sendRedirect("insertDictionary?error=invalid_bit_string");
             return;
         }
 
@@ -71,22 +79,21 @@ public class HuffmanDictionaryServlet extends HttpServlet {
         Connection connection = database.getConnection();
 
         if (connection == null) {
-            System.err.println("❌ Erreur: Impossible d'obtenir la connexion à la base.");
             response.sendRedirect("insertDictionary?error=db_connection");
             return;
         }
 
-        String sql = "INSERT INTO dico (caractere, code) VALUES (?, ?)";
+        String sql = "INSERT INTO dico (caractere, code) VALUES (?, CAST(? AS BIT VARYING))";
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, character.trim());
-            statement.setString(2, huffmanCode.trim());
+            statement.setString(2, huffmanCode.trim()); // Conversion explicite en BIT VARYING
 
             int rowsInserted = statement.executeUpdate();
 
             if (rowsInserted > 0) {
                 System.out.println("✅ Insertion réussie !");
-                loadDictionaryFromDB();  // Recharger les données depuis la base
+                loadDictionaryFromDB();
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -96,11 +103,6 @@ public class HuffmanDictionaryServlet extends HttpServlet {
             database.closeConnection();
         }
 
-        // 🔄 Redirection pour s'assurer que doGet() est exécuté avec la mise à jour
         response.sendRedirect("insertDictionary");
     }
-
-
-
-
 }
