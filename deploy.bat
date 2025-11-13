@@ -2,14 +2,13 @@
 setlocal enabledelayedexpansion
 
 :: Déclaration des variables
-set "work_dir=D:\ITU\semestre5\baov\projetS5\backup\boulangerie"
-@REM set "work_dir=D:\boulangerie"
+set "work_dir=D:\ITU\semestre6\codage\huffman\java\huffman"
 set "temp=%work_dir%\temp"
 set "web=%work_dir%\web"
 set "web_xml=%work_dir%\web.xml"
 set "lib=%work_dir%\lib"
 set "web_apps=C:\Program Files\Apache Software Foundation\Tomcat 10.1\webapps"
-set "war_name=boulangerie"
+set "war_name=huffmen"
 set "src=%work_dir%\src"
 
 :: Effacer le dossier [temp]
