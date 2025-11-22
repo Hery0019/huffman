@@ -1,0 +1,17 @@
+# Sortie de build (régénérée par deploy.bat)
+/temp/
+/*.war
+/sources.txt
+*.class
+
+# IDE
+/.idea/
+/.vscode/
+/*.iml
+/out/
+/target/
+/build/
+
+# OS
+Thumbs.db
+.DS_Store
