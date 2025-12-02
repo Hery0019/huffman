@@ -1,0 +1,67 @@
+<%-- Fragment commun : entête HTML + design system Tailwind. Attend une variable String pageTitle. --%>
+<%@ page pageEncoding="UTF-8" %>
+<% String ctx = request.getContextPath(); %>
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><%= hery.itu.util.Html.esc(pageTitle) %> · Codage de Huffman</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        /* Design system « carnet technique » : papier chaud, encre, deux teintes de même luminosité pour 0 et 1. */
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        paper:   '#F6F3EC',
+                        surface: '#FFFFFF',
+                        soft:    '#EFEBE2',
+                        line:    '#E2DDD2',
+                        ink:     '#1C1B18',
+                        muted:   '#6E6A61',
+                        /* Paire 0/1 validée (bande de luminosité, chroma, séparation daltonisme, contraste). */
+                        zero:    { DEFAULT: '#2E6FA3', soft: '#E3ECF5' },
+                        one:     { DEFAULT: '#B9532B', soft: '#F7E5DD' },
+                        ok:      { DEFAULT: '#3C7A4E', soft: '#E4F0E6' },
+                        warn:    { DEFAULT: '#A8402C', soft: '#F8E3DE' }
+                    },
+                    fontFamily: {
+                        sans: ['"IBM Plex Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+                    },
+                    boxShadow: {
+                        card: '0 1px 2px rgba(28, 27, 24, 0.04), 0 8px 24px -12px rgba(28, 27, 24, 0.12)'
+                    }
+                }
+            }
+        };
+    </script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body { @apply bg-paper text-ink font-sans antialiased; }
+            a { @apply text-ink underline-offset-4; }
+            a:hover { @apply text-zero; }
+        }
+        @layer components {
+            .card { @apply bg-surface border border-line rounded-xl shadow-card; }
+            .label { @apply text-[11px] font-medium uppercase tracking-[0.14em] text-muted; }
+            .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 h-11 text-sm font-medium transition-colors no-underline; }
+            .btn-primary { @apply bg-ink text-paper hover:bg-zero hover:text-white; }
+            .btn-secondary { @apply bg-surface text-ink border border-line hover:border-ink hover:text-ink; }
+            .btn-danger { @apply bg-surface text-warn border border-warn/40 hover:bg-warn hover:text-white; }
+            .field { @apply w-full rounded-lg border border-line bg-surface px-3 py-2.5 text-ink placeholder:text-muted/70 focus:outline-none focus:border-ink focus:ring-2 focus:ring-ink/10; }
+            .bits { @apply font-mono text-[15px] leading-7 tracking-[0.08em] break-all; }
+            .bit-0 { @apply text-zero; }
+            .bit-1 { @apply text-one; }
+            .bit-missing { @apply text-white bg-warn rounded px-1 mx-px font-semibold; }
+            .code { @apply font-mono text-sm tracking-[0.1em]; }
+            .nav-link { @apply no-underline text-sm text-muted hover:text-ink px-3 h-9 inline-flex items-center rounded-lg; }
+            .nav-link-active { @apply text-ink bg-soft; }
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col">

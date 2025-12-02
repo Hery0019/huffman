@@ -1,0 +1,23 @@
+<%-- Barre de navigation. Attend une variable String activeNav parmi : "encoder", "dictionnaire", "coder". --%>
+<header class="border-b border-line bg-paper/90 backdrop-blur sticky top-0 z-10">
+    <div class="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between gap-6">
+        <a href="<%= ctx %>/index.jsp" class="no-underline hover:text-ink flex items-center gap-3">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+                <circle cx="14" cy="5" r="3" stroke="#1C1B18" stroke-width="1.8"/>
+                <path d="M12 7.5 7 13.5" stroke="#2E6FA3" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M16 7.5l5 6" stroke="#B9532B" stroke-width="1.8" stroke-linecap="round"/>
+                <rect x="3" y="14" width="8" height="8" rx="2" fill="#1C1B18"/>
+                <circle cx="21" cy="17" r="3" stroke="#1C1B18" stroke-width="1.8"/>
+                <path d="M19 19.5 16 24" stroke="#2E6FA3" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M23 19.5l3 4.5" stroke="#B9532B" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span class="font-semibold tracking-tight">Codage de Huffman</span>
+        </a>
+        <nav class="flex items-center gap-1" aria-label="Navigation principale">
+            <a href="<%= ctx %>/index.jsp" class="nav-link <%= "encoder".equals(activeNav) ? "nav-link-active" : "" %>">Encoder un texte</a>
+            <a href="<%= ctx %>/insertDictionary" class="nav-link <%= "dictionnaire".equals(activeNav) ? "nav-link-active" : "" %>">Dictionnaire</a>
+            <a href="<%= ctx %>/encodeText" class="nav-link <%= "coder".equals(activeNav) ? "nav-link-active" : "" %>">Coder avec le dictionnaire</a>
+        </nav>
+    </div>
+</header>
+<main class="flex-1 w-full max-w-5xl mx-auto px-5 py-10">

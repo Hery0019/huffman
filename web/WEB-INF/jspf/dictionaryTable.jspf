@@ -1,0 +1,33 @@
+<%-- Table du dictionnaire manuel. Attend une variable Map<String,String> huffmanDictionary (non nulle). --%>
+<%
+    java.util.TreeMap<String, String> sortedDictionary = new java.util.TreeMap<>(huffmanDictionary);
+%>
+<% if (sortedDictionary.isEmpty()) { %>
+    <div class="card px-6 py-10 text-center">
+        <p class="text-muted">Le dictionnaire est vide.</p>
+        <p class="text-sm text-muted mt-1">Ajoutez un caractère et son code binaire pour commencer.</p>
+    </div>
+<% } else { %>
+    <div class="card overflow-hidden">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-line">
+                    <th class="label text-left px-5 py-3 font-medium">Caractère</th>
+                    <th class="label text-left px-5 py-3 font-medium">Code</th>
+                    <th class="label text-right px-5 py-3 font-medium">Bits</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-line">
+            <% for (java.util.Map.Entry<String, String> entry : sortedDictionary.entrySet()) { %>
+                <tr>
+                    <td class="px-5 py-2.5">
+                        <span class="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-md bg-ink text-paper font-mono font-medium"><%= hery.itu.util.Html.symbol(entry.getKey()) %></span>
+                    </td>
+                    <td class="px-5 py-2.5 code"><%= hery.itu.util.Html.bits(entry.getValue()) %></td>
+                    <td class="px-5 py-2.5 text-right font-mono text-muted"><%= entry.getValue() == null ? 0 : entry.getValue().length() %></td>
+                </tr>
+            <% } %>
+            </tbody>
+        </table>
+    </div>
+<% } %>

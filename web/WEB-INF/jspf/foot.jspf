@@ -1,0 +1,30 @@
+</main>
+<footer class="border-t border-line">
+    <div class="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between text-xs text-muted">
+        <span>Codage de Huffman — projet pédagogique</span>
+        <span class="font-mono"><span class="bit-0">0</span> gauche · <span class="bit-1">1</span> droite</span>
+    </div>
+</footer>
+<script>
+    /* Actions côté client sur le texte encodé (porté par data-encoded sur le bouton). */
+    function copyEncoded(btn) {
+        navigator.clipboard.writeText(btn.dataset.encoded).then(function () {
+            var initial = btn.textContent;
+            btn.textContent = 'Copié';
+            setTimeout(function () { btn.textContent = initial; }, 1500);
+        });
+    }
+    function downloadEncoded(btn) {
+        var blob = new Blob([btn.dataset.encoded], { type: 'text/plain;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = btn.dataset.filename || 'huffman_encoded.txt';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+</script>
+</body>
+</html>
