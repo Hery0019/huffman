@@ -1,72 +1,79 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%> 
-<%@ page import="hery.itu.*" %> 
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="hery.itu.util.Html" %>
+<%
+    Map<String, String> huffmanDictionary = (Map<String, String>) request.getAttribute("huffmanDictionary");
+    if (huffmanDictionary == null) {
+        // Page ouverte directement : passer par le servlet pour charger le dictionnaire.
+%>
+<jsp:forward page="/insertDictionary" />
+<%
+    }
+    String pageTitle = "Dictionnaire";
+    String activeNav = "dictionnaire";
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Insertion Dictionnaire Huffman</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
+    String error = request.getParameter("error");
+    String errorMessage = null;
+    if (error != null) {
+        switch (error) {
+            case "empty" -> errorMessage = "Le caractère et le code sont obligatoires.";
+            case "invalid_bit_string" -> errorMessage = "Le code ne doit contenir que des 0 et des 1.";
+            case "db_connection" -> errorMessage = "Connexion à la base de données impossible.";
+            case "sql" -> errorMessage = "Insertion refusée par la base : un seul caractère et un code binaire.";
+            default -> errorMessage = "Une erreur est survenue.";
+        }
+    }
+%>
+<%@ include file="/WEB-INF/jspf/head.jspf" %>
+<%@ include file="/WEB-INF/jspf/nav.jspf" %>
 
-<div class="container mt-5">
-    <h2 class="text-center">Insertion Dictionnaire Huffman</h2>
-
-    <!-- Formulaire pour l'insertion du dictionnaire -->
-    <form action="insertDictionary" method="POST">
-        <div class="mb-3">
-            <label for="character" class="form-label">Caractère</label>
-            <input type="text" class="form-control" id="character" name="character" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="huffmanCode" class="form-label">Code Huffman</label>
-            <input type="text" class="form-control" id="huffmanCode" name="huffmanCode" required>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Ajouter au Dictionnaire</button>
-    </form>
-    <!-- Bouton pour vider le dictionnaire -->
-    <form action="clearDictionary" method="POST">
-        <button type="submit" class="btn btn-danger mt-3">Vider Dictionnaire</button>
-    </form>
-
-
-    <h3 class="mt-5">Dictionnaire Huffman</h3>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Caractère</th>
-                <th>Code Huffman</th>
-            </tr>
-        </thead>
-        <tbody>
-            <%
-                // Récupérer le dictionnaire à partir de l'attribut du servlet
-                Map<String, String> huffmanDictionary = (Map<String, String>) request.getAttribute("huffmanDictionary");
-                if (huffmanDictionary != null) {
-                    for (Map.Entry<String, String> entry : huffmanDictionary.entrySet()) {
-            %>
-                        <tr>
-                            <td><%= entry.getKey() %></td>
-                            <td><%= entry.getValue() %></td>
-                        </tr>
-            <%
-                    }
-                }
-            %>
-        </tbody>
-    </table>
-
-    <!-- Bouton pour rediriger vers la page de codage -->
-    <a href="encodeText.jsp" class="btn btn-success mt-3">Aller à la page de codage</a>
-
-    <a href="index.jsp" class="btn btn-secondary mt-3">⬅ Retour</a>
+<div class="mb-8">
+    <p class="label">Parcours manuel</p>
+    <h1 class="mt-2 text-3xl font-semibold tracking-tight">Dictionnaire de codes</h1>
+    <p class="mt-3 text-muted max-w-prose">
+        Associez à chaque caractère un code binaire. Pour que le texte codé soit décodable,
+        aucun code ne doit être le préfixe d'un autre.
+    </p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<% if (errorMessage != null) { %>
+<div role="alert" class="mb-6 rounded-lg border border-warn/30 bg-warn-soft text-warn px-4 py-3 text-sm flex items-center gap-3">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true" class="shrink-0">
+        <circle cx="9" cy="9" r="7.25" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M9 5.5v4.2M9 12.5v.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <span><%= Html.esc(errorMessage) %></span>
+</div>
+<% } %>
 
-</body>
-</html>
+<section class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-8 items-start">
+    <div>
+        <form action="<%= ctx %>/insertDictionary" method="post" class="card p-6">
+            <label for="character" class="label">Caractère</label>
+            <input id="character" name="character" type="text" maxlength="1" required autocomplete="off"
+                   class="field mt-2 font-mono text-lg" placeholder="a">
+
+            <label for="huffmanCode" class="label block mt-5">Code binaire</label>
+            <input id="huffmanCode" name="huffmanCode" type="text" required autocomplete="off"
+                   pattern="[01]+" inputmode="numeric" title="Uniquement des 0 et des 1"
+                   class="field mt-2 font-mono text-lg tracking-[0.12em]" placeholder="0101">
+
+            <button type="submit" class="btn btn-primary w-full mt-6">Ajouter au dictionnaire</button>
+        </form>
+
+        <form action="<%= ctx %>/clearDictionary" method="post" class="mt-4"
+              onsubmit="return confirm('Vider tout le dictionnaire ? Cette action est irréversible.');">
+            <button type="submit" class="btn btn-danger w-full">Vider le dictionnaire</button>
+        </form>
+    </div>
+
+    <div>
+        <div class="flex items-baseline justify-between mb-3">
+            <h2 class="label">Entrées <span class="font-mono normal-case tracking-normal text-ink ml-1"><%= huffmanDictionary.size() %></span></h2>
+            <a href="<%= ctx %>/encodeText" class="text-sm">Coder un texte avec ce dictionnaire →</a>
+        </div>
+        <%@ include file="/WEB-INF/jspf/dictionaryTable.jspf" %>
+    </div>
+</section>
+
+<%@ include file="/WEB-INF/jspf/foot.jspf" %>
