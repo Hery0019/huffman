@@ -14,14 +14,17 @@
 
     String error = request.getParameter("error");
     String errorMessage = null;
-    if (error != null) {
-        switch (error) {
-            case "empty" -> errorMessage = "Le caractère et le code sont obligatoires.";
-            case "invalid_bit_string" -> errorMessage = "Le code ne doit contenir que des 0 et des 1.";
-            case "db_connection" -> errorMessage = "Connexion à la base de données impossible.";
-            case "sql" -> errorMessage = "Insertion refusée par la base : un seul caractère et un code binaire.";
-            default -> errorMessage = "Une erreur est survenue.";
-        }
+    // Pas de switch fléché ici : Jasper compile les JSP en Java 11 par défaut.
+    if ("empty".equals(error)) {
+        errorMessage = "Le caractère et le code sont obligatoires.";
+    } else if ("invalid_bit_string".equals(error)) {
+        errorMessage = "Le code ne doit contenir que des 0 et des 1.";
+    } else if ("db_connection".equals(error)) {
+        errorMessage = "Connexion à la base de données impossible.";
+    } else if ("sql".equals(error)) {
+        errorMessage = "Insertion refusée par la base : un seul caractère et un code binaire.";
+    } else if (error != null) {
+        errorMessage = "Une erreur est survenue.";
     }
 %>
 <%@ include file="/WEB-INF/jspf/head.jspf" %>
