@@ -1,59 +1,54 @@
 @echo off
-setlocal enabledelayedexpansion
+setlocal
 
-:: Déclaration des variables
-set "work_dir=D:\ITU\semestre6\codage\huffman\java\huffman"
-set "temp=%work_dir%\temp"
+:: Compile, empaquette et deploie l'application dans Tomcat.
+:: Prerequis : javac et jar dans le PATH ; CATALINA_HOME (ou l'installation par defaut ci-dessous).
+
+:: Le repertoire du projet est celui de ce script (plus de chemin en dur).
+set "work_dir=%~dp0"
+set "work_dir=%work_dir:~0,-1%"
+set "build=%work_dir%\temp"
 set "web=%work_dir%\web"
-set "web_xml=%work_dir%\web.xml"
 set "lib=%work_dir%\lib"
-set "web_apps=C:\Program Files\Apache Software Foundation\Tomcat 10.1\webapps"
-set "war_name=huffmen"
 set "src=%work_dir%\src"
+set "war_name=huffman"
+if "%CATALINA_HOME%"=="" set "CATALINA_HOME=C:\Program Files\Apache Software Foundation\Tomcat 10.1"
+set "web_apps=%CATALINA_HOME%\webapps"
 
-:: Effacer le dossier [temp]
-if exist "%temp%" (
-    rd /s /q "%temp%"
+:: Dossier de build propre
+if exist "%build%" rd /s /q "%build%"
+mkdir "%build%\WEB-INF\lib"
+mkdir "%build%\WEB-INF\classes"
+
+:: Pages, fragments et ressources web
+xcopy /s /y /q "%web%\*.*" "%build%" >nul
+
+:: Jars d'execution uniquement : lib\provided\ est fourni par Tomcat, lib\test\ ne sert qu'aux tests.
+copy /y "%lib%\*.jar" "%build%\WEB-INF\lib" >nul
+
+:: Compilation
+dir /s /b "%src%\*.java" > "%build%\sources.txt"
+javac -encoding UTF-8 -d "%build%\WEB-INF\classes" -cp "%lib%\*;%lib%\provided\*" @"%build%\sources.txt"
+if errorlevel 1 (
+    echo Compilation echouee, deploiement annule.
+    exit /b 1
 )
+del "%build%\sources.txt"
 
-:: Créer la structure de dossier
-mkdir "%temp%\WEB-INF\lib"
-mkdir "%temp%\WEB-INF\classes"
-
-:: Copier le contenu de [web] dans [temp]
-xcopy /s /y "%web%\*.*" "%temp%"
-
-:: Copier le fichier [web_xml] vers [temp] + "\WEB-INF"
-copy "%web_xml%" "%temp%\WEB-INF"
-
-:: Copier les fichiers .jar dans [lib] vers [temp] + "\WEB-INF\lib"
-xcopy /s /i "%lib%\*.jar" "%temp%\WEB-INF\lib"
-
-:: Copier la structure de dossier de src dans WEB-INF/classes
-xcopy /t /e "%src%" "%temp%\WEB-INF\classes"
-
-:: Compilation des fichiers .java dans src avec les options suivantes
-:: Note: Assurez-vous que le chemin vers le compilateur Java (javac) est correctement configuré dans votre variable d'environnement PATH.
-:: Créer une liste de tous les fichiers .java dans le répertoire src et ses sous-répertoires
-dir /s /B "%src%\*.java" > sources.txt
-:: Exécuter la commande javac
-javac -d "%temp%\WEB-INF\classes" -cp "%lib%\*" @sources.txt
-:: Supprimer le fichiers sources.txt après la compilation
-del sources.txt
-
-:: Créer un fichier .war nommé [war_name].war à partir du dossier [temp] et son contenu dans le dossier [work_dir]
-cd "%temp%"
+:: Archive WAR
+pushd "%build%"
 jar cf "%work_dir%\%war_name%.war" *
+popd
 
-:: Effacer le fichier .war dans [web_apps] s'il existe
-if exist "%web_apps%\%war_name%.war" (
-    del /f /q "%web_apps%\%war_name%.war"
+:: Deploiement
+if not exist "%web_apps%" (
+    echo Dossier webapps introuvable : "%web_apps%". Definissez CATALINA_HOME.
+    exit /b 1
 )
-
-:: Copier le fichier .war vers [web_apps]
-copy /y "%work_dir%\%war_name%.war" "%web_apps%"
-
+if exist "%web_apps%\%war_name%.war" del /f /q "%web_apps%\%war_name%.war"
+copy /y "%work_dir%\%war_name%.war" "%web_apps%" >nul
 del "%work_dir%\%war_name%.war"
 
-echo Deploy finished.
+echo Deploiement termine : %web_apps%\%war_name%.war
+endlocal
 pause
