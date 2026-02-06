@@ -1,19 +1,29 @@
-package  hery.itu.huffman;
+package hery.itu.huffman;
 
 import java.util.Map;
 
+/** Encode un texte avec une table de codes issue de {@link HuffmanTree#generateCodes()}. */
 public class HuffmanEncoder {
-    private Map<Character, String> huffmanCodes;
+    private final Map<Character, String> huffmanCodes;
 
-    public void setCodes(Map<Character, String> codes) {
-        this.huffmanCodes = codes;
+    public HuffmanEncoder(Map<Character, String> huffmanCodes) {
+        this.huffmanCodes = huffmanCodes;
     }
 
+    /**
+     * @throws IllegalArgumentException si un caractère du texte n'a pas de code
+     *         (la table ne provient pas de l'arbre de ce texte)
+     */
     public String encode(String text) {
-        StringBuilder encodedText = new StringBuilder();
+        StringBuilder encoded = new StringBuilder();
         for (char c : text.toCharArray()) {
-            encodedText.append(huffmanCodes.get(c));
+            String code = huffmanCodes.get(c);
+            if (code == null) {
+                throw new IllegalArgumentException("Aucun code pour le caractère U+"
+                        + String.format("%04X", (int) c));
+            }
+            encoded.append(code);
         }
-        return encodedText.toString();
+        return encoded.toString();
     }
 }

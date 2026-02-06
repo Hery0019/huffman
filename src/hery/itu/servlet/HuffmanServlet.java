@@ -1,53 +1,50 @@
 package hery.itu.servlet;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import com.google.gson.Gson;
+import hery.itu.huffman.HuffmanDecoder;
+import hery.itu.huffman.HuffmanEncoder;
+import hery.itu.huffman.HuffmanTree;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import com.google.gson.Gson;
+import java.io.IOException;
+import java.util.Map;
 
-import hery.itu.huffman.*;
-
+/** Parcours automatique : fréquences → arbre → codes → encodage → décodage de contrôle. */
 @WebServlet("/huffman")
 public class HuffmanServlet extends HttpServlet {
+
+    private static final String RESULT_VIEW = "/WEB-INF/views/result.jsp";
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
         String text = request.getParameter("text");
-
-        // Calcul des fréquences
-        Map<Character, Integer> frequencyMap = new HashMap<>();
-        for (char c : text.toCharArray()) {
-            frequencyMap.put(c, frequencyMap.getOrDefault(c, 0) + 1);
+        if (text == null || text.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            return;
         }
 
-        // Construction de l'arbre Huffman
-        HuffmanTree tree = new HuffmanTree();
-        tree.buildTree(frequencyMap);
+        HuffmanTree tree = HuffmanTree.fromText(text);
         Map<Character, String> huffmanCodes = tree.generateCodes();
+        String encodedText = new HuffmanEncoder(huffmanCodes).encode(text);
+        String decodedText = new HuffmanDecoder(tree.getRoot()).decode(encodedText);
 
-        // Encodage
-        HuffmanEncoder encoder = new HuffmanEncoder();
-        encoder.setCodes(huffmanCodes);
-        String encodedText = encoder.encode(text);
-
-        // Décodage
-        HuffmanDecoder decoder = new HuffmanDecoder(tree.getRoot());
-        String decodedText = decoder.decode(encodedText);
-
-        // Stocker les résultats dans la requête
         request.setAttribute("originalText", text);
         request.setAttribute("encodedText", encodedText);
         request.setAttribute("decodedText", decodedText);
-        request.setAttribute("frequencyMap", frequencyMap);
+        request.setAttribute("frequencyMap", HuffmanTree.countFrequencies(text));
         request.setAttribute("huffmanCodes", huffmanCodes);
-        request.setAttribute("huffmanTreeJson", tree.toJson());
+        // Sérialisation JSON de l'arbre pour le rendu D3 : préoccupation de présentation, donc ici et non dans le domaine.
+        request.setAttribute("huffmanTreeJson", new Gson().toJson(tree.getRoot()));
 
-        request.getRequestDispatcher("result.jsp").forward(request, response);
+        request.getRequestDispatcher(RESULT_VIEW).forward(request, response);
     }
 }
-

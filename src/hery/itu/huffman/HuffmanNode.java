@@ -1,5 +1,6 @@
 package hery.itu.huffman;
 
+/** Nœud de l'arbre de Huffman : une feuille porte un symbole, un nœud interne porte la fréquence cumulée. */
 public class HuffmanNode implements Comparable<HuffmanNode> {
     private char character;
     private int frequency;
@@ -19,6 +20,10 @@ public class HuffmanNode implements Comparable<HuffmanNode> {
     public void setLeft(HuffmanNode left) { this.left = left; }
     public HuffmanNode getRight() { return right; }
     public void setRight(HuffmanNode right) { this.right = right; }
+
+    public boolean isLeaf() {
+        return left == null && right == null;
+    }
 
     @Override
     public int compareTo(HuffmanNode other) {
