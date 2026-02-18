@@ -1,28 +1,19 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="java.util.TreeSet" %>
+<%@ page import="java.util.Set" %>
+<%@ page import="java.util.Collections" %>
 <%@ page import="hery.itu.util.Html" %>
 <%
     Map<String, String> huffmanDictionary = (Map<String, String>) request.getAttribute("huffmanDictionary");
-    if (huffmanDictionary == null) {
-        // Page ouverte directement : passer par le servlet pour charger le dictionnaire.
-%>
-<jsp:forward page="/encodeText" />
-<%
-    }
+    boolean dbError = request.getAttribute("dbError") != null;
     String pageTitle = "Coder avec le dictionnaire";
     String activeNav = "coder";
 
+    String submittedText = (String) request.getAttribute("submittedText");
     String encodedText = (String) request.getAttribute("encodedText");
-    String submittedText = request.getParameter("text");
-
-    // Symboles du texte absents du dictionnaire (présentation uniquement : le servlet les remplace par « ? »).
-    TreeSet<String> missingSymbols = new TreeSet<>();
-    if (encodedText != null && submittedText != null) {
-        for (char c : submittedText.toCharArray()) {
-            String symbol = String.valueOf(c);
-            if (!huffmanDictionary.containsKey(symbol)) missingSymbols.add(symbol);
-        }
+    Set<String> missingSymbols = (Set<String>) request.getAttribute("missingSymbols");
+    if (missingSymbols == null) {
+        missingSymbols = Collections.emptySet();
     }
 %>
 <%@ include file="/WEB-INF/jspf/head.jspf" %>
@@ -37,6 +28,13 @@
     </p>
 </div>
 
+<% if (dbError) { %>
+<div role="alert" class="mb-6 rounded-lg border border-warn/30 bg-warn-soft text-warn px-4 py-3 text-sm">
+    <p class="font-medium">Base de données injoignable.</p>
+    <p class="mt-1">Vérifiez que PostgreSQL est démarré et que la configuration <code class="font-mono">HUFFMAN_DB_*</code> est renseignée (voir le README).</p>
+</div>
+<% } %>
+
 <section class="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-8 items-start">
     <div class="space-y-6">
         <form action="<%= ctx %>/encodeText" method="post" class="card p-6">
@@ -50,7 +48,7 @@
                 <% } else { %>
                     <span class="text-xs text-muted"><%= huffmanDictionary.size() %> codes disponibles.</span>
                 <% } %>
-                <button type="submit" class="btn btn-primary">Coder le texte</button>
+                <button type="submit" class="btn btn-primary" <%= dbError ? "disabled" : "" %>>Coder le texte</button>
             </div>
         </form>
 

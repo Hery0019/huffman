@@ -1,40 +1,37 @@
 package hery.itu.servlet;
 
-import hery.itu.base.Base;
-import jakarta.servlet.ServletException;
+import hery.itu.base.DictionaryRepository;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/** Vide le dictionnaire manuel. */
 @WebServlet("/clearDictionary")
 public class ClearDictionaryServlet extends HttpServlet {
+
+    private static final Logger LOG = Logger.getLogger(ClearDictionaryServlet.class.getName());
+
+    private final DictionaryRepository repository = new DictionaryRepository();
+
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        Base database = new Base();
-        Connection connection = database.getConnection();
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.sendRedirect(request.getContextPath() + "/insertDictionary");
+    }
 
-        if (connection != null) {
-            String sql = "TRUNCATE TABLE dico RESTART IDENTITY";
-
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                statement.executeUpdate();
-                System.out.println("✅ Dictionnaire vidé avec succès !");
-            } catch (SQLException e) {
-                System.err.println("❌ Erreur SQL: " + e.getMessage());
-                e.printStackTrace();
-            } finally {
-                database.closeConnection();
-            }
-        } else {
-            System.err.println("❌ Connexion à la base de données échouée !");
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String page = request.getContextPath() + "/insertDictionary";
+        try {
+            repository.clear();
+            response.sendRedirect(page + "?cleared=1");
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Vidage du dictionnaire impossible", e);
+            response.sendRedirect(page + "?error=database");
         }
-
-        // Rediriger vers la page après suppression
-        response.sendRedirect("insertDictionary.jsp");
     }
 }

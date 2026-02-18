@@ -1,63 +1,46 @@
 package hery.itu.servlet;
 
-import hery.itu.base.Base;
+import hery.itu.base.DictionaryRepository;
+import hery.itu.huffman.DictionaryEncoder;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 
+/** Parcours manuel : encodage d'un texte avec le dictionnaire saisi. */
 @WebServlet("/encodeText")
 public class HuffmanEncodeServlet extends HttpServlet {
 
-    // Charger le dictionnaire depuis la base de données
-    private Map<String, String> getHuffmanDictionary() {
-        Map<String, String> dictionary = new HashMap<>();
-        Base base = new Base();
-    
-        try (Connection connection = base.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT caractere, code FROM dico");
-             ResultSet resultSet = statement.executeQuery()) {
-    
-            while (resultSet.next()) {
-                String caractere = resultSet.getString("caractere");
-                String code = resultSet.getString("code"); // Récupérer directement la valeur en tant que String
-                dictionary.put(caractere, code);
-            }
-        } catch (SQLException e) {
-            System.err.println("❌ Erreur chargement Huffman: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return dictionary;
+    private static final String VIEW = "/WEB-INF/views/encodeText.jsp";
+
+    private final DictionaryRepository repository = new DictionaryRepository();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        DictionaryAttributes.load(repository, request);
+        request.getRequestDispatcher(VIEW).forward(request, response);
     }
 
-    // GET : Charger le dictionnaire et afficher la page
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        request.setAttribute("huffmanDictionary", getHuffmanDictionary());
-        request.getRequestDispatcher("encodeText.jsp").forward(request, response);
-    }
-
-    // POST : Encoder le texte
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String textToEncode = request.getParameter("text");
-        Map<String, String> huffmanDictionary = getHuffmanDictionary();
-        StringBuilder encodedText = new StringBuilder();
-
-        for (char ch : textToEncode.toCharArray()) {
-            encodedText.append(huffmanDictionary.getOrDefault(String.valueOf(ch), "?"));
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String text = request.getParameter("text");
+        if (text == null || text.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/encodeText");
+            return;
         }
 
-        request.setAttribute("encodedText", encodedText.toString());
-        request.setAttribute("huffmanDictionary", huffmanDictionary);
-        request.getRequestDispatcher("encodeText.jsp").forward(request, response);
+        Map<String, String> dictionary = DictionaryAttributes.load(repository, request);
+        if (request.getAttribute(DictionaryAttributes.DB_ERROR) == null) {
+            DictionaryEncoder.Result result = new DictionaryEncoder(dictionary).encode(text);
+            request.setAttribute("submittedText", text);
+            request.setAttribute("encodedText", result.encoded());
+            request.setAttribute("missingSymbols", result.missingSymbols());
+        }
+        request.getRequestDispatcher(VIEW).forward(request, response);
     }
 }
