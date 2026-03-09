@@ -8,13 +8,7 @@
     Map<Character, String> huffmanCodes = (Map<Character, String>) request.getAttribute("huffmanCodes");
     Map<Character, Integer> frequencyMap = (Map<Character, Integer>) request.getAttribute("frequencyMap");
     String huffmanTreeJson = (String) request.getAttribute("huffmanTreeJson");
-
-    if (originalText == null || encodedText == null || huffmanCodes == null || frequencyMap == null) {
-        // Page ouverte directement, sans résultat à afficher.
-%>
-<jsp:forward page="/index.jsp" />
-<%
-    }
+    // Vue sous WEB-INF : uniquement atteinte par HuffmanServlet, les attributs sont toujours présents.
     String pageTitle = "Résultat";
     String activeNav = "encoder";
 
