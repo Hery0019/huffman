@@ -10,7 +10,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <%-- Tailwind 3.4.17 (compilateur JIT navigateur) auto-hébergé : version figée, pas de dépendance réseau.
+         Le CDN d'origine ne sert pas d'en-tête CORS, ce qui interdisait une intégrité SRI. --%>
+    <script src="<%= ctx %>/assets/tailwind-3.4.17.js"></script>
     <script>
         /* Design system « carnet technique » : papier chaud, encre, deux teintes de même luminosité pour 0 et 1. */
         tailwind.config = {

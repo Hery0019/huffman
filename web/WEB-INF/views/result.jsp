@@ -142,7 +142,7 @@
     </div>
 </section>
 
-<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="<%= ctx %>/assets/d3-7.9.0.min.js"></script>
 <script>
     (function () {
         var treeData = <%= huffmanTreeJson != null ? huffmanTreeJson : "null" %>;
