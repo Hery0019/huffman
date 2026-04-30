@@ -1,3 +1,5 @@
+<%-- Chaque fragment inclus déclare son encodage : sans directive, Jasper le lirait en ISO-8859-1. --%>
+<%@ page pageEncoding="UTF-8" %>
 </main>
 <footer class="border-t border-line">
     <div class="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between text-xs text-muted">

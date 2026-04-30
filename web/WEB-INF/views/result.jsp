@@ -173,8 +173,13 @@
 
         d3.tree().size([width - margin.left - margin.right, height - margin.top - margin.bottom])(root);
 
+        // Léger débordement (jusqu'à 1,6× le cadre) : l'arbre est réduit pour tenir dans la largeur.
+        // Au-delà, il garde sa taille naturelle et le cadre défile, sinon les symboles deviendraient illisibles.
+        var fitToWidth = width > container.clientWidth && width <= container.clientWidth * 1.6;
+
         var svg = d3.select(container).append('svg')
-            .attr('width', width).attr('height', height)
+            .attr('width', fitToWidth ? '100%' : width)
+            .attr('height', fitToWidth ? null : height)
             .attr('viewBox', [0, 0, width, height])
             .attr('role', 'img')
             .attr('aria-label', 'Arbre de Huffman : ' + leaves + ' feuilles, profondeur ' + root.height);

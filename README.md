@@ -10,6 +10,25 @@ la compression de Huffman de deux façons :
 
 Usage prévu : un poste, un utilisateur, pas d'authentification.
 
+## Aperçu
+
+**Accueil** — saisie du texte et rappel des trois étapes de l'algorithme.
+
+![Accueil : formulaire de saisie et les trois étapes](docs/screenshots/accueil.png)
+
+**Résultat** — indicateurs de compression, contrôle de l'aller-retour, texte encodé (0 en bleu, 1 en terre cuite),
+table des fréquences et codes, arbre de Huffman avec les bits sur les arêtes.
+
+![Résultat : indicateurs, texte encodé, table des codes et arbre](docs/screenshots/resultat.png)
+
+**Dictionnaire** — saisie d'un couple caractère / code, avec validation (doublons, préfixes) et messages explicites.
+
+![Dictionnaire : formulaire d'ajout et table des entrées](docs/screenshots/dictionnaire.png)
+
+**Codage par dictionnaire** — les caractères sans code sont signalés par `?` et listés sous le résultat.
+
+![Codage par dictionnaire : texte codé et symboles absents](docs/screenshots/codage.png)
+
 ## Prérequis
 
 - JDK 17 ou plus récent (`javac`, `jar` dans le `PATH`) ; testé avec le JDK 21.
