@@ -1,12 +1,24 @@
 package hery.itu.huffman;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-/** Construction de l'arbre de Huffman à partir des fréquences, et dérivation des codes. */
+/**
+ * Construction de l'arbre de Huffman à partir des fréquences, et dérivation des codes.
+ * La construction garde la trace des fusions ({@link #getSteps()}) pour pouvoir être rejouée pas à pas.
+ */
 public class HuffmanTree {
+
+    /** Une fusion : les deux nœuds de plus faible fréquence retirés de la file, et le parent créé. */
+    public record MergeStep(int leftId, int rightId, int parentId, int frequency) {}
+
     private HuffmanNode root;
+    private final List<HuffmanNode> nodes = new ArrayList<>();
+    private final List<MergeStep> steps = new ArrayList<>();
 
     /** Compte les occurrences de chaque caractère, dans l'ordre de première apparition. */
     public static Map<Character, Integer> countFrequencies(String text) {
@@ -25,25 +37,47 @@ public class HuffmanTree {
     }
 
     public void buildTree(Map<Character, Integer> frequencyMap) {
+        nodes.clear();
+        steps.clear();
+
         PriorityQueue<HuffmanNode> queue = new PriorityQueue<>();
         for (Map.Entry<Character, Integer> entry : frequencyMap.entrySet()) {
-            queue.add(new HuffmanNode(entry.getKey(), entry.getValue()));
+            HuffmanNode leaf = new HuffmanNode(entry.getKey(), entry.getValue());
+            register(leaf);
+            queue.add(leaf);
         }
 
         while (queue.size() > 1) {
             HuffmanNode left = queue.poll();
             HuffmanNode right = queue.poll();
             HuffmanNode parent = new HuffmanNode('\0', left.getFrequency() + right.getFrequency());
+            register(parent);
             parent.setLeft(left);
             parent.setRight(right);
+            steps.add(new MergeStep(left.getId(), right.getId(), parent.getId(), parent.getFrequency()));
             queue.add(parent);
         }
         root = queue.poll(); // null si aucune fréquence
     }
 
+    private void register(HuffmanNode node) {
+        node.setId(nodes.size());
+        nodes.add(node);
+    }
+
     /** Racine de l'arbre, ou {@code null} si l'arbre est vide. */
     public HuffmanNode getRoot() {
         return root;
+    }
+
+    /** Tous les nœuds, indexés par identifiant : les feuilles d'abord, puis les parents dans l'ordre des fusions. */
+    public List<HuffmanNode> getNodes() {
+        return Collections.unmodifiableList(nodes);
+    }
+
+    /** Les fusions dans l'ordre où elles ont eu lieu ; vide pour un arbre réduit à une feuille. */
+    public List<MergeStep> getSteps() {
+        return Collections.unmodifiableList(steps);
     }
 
     /**

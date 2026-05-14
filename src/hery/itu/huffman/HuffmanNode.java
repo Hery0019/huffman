@@ -1,7 +1,11 @@
 package hery.itu.huffman;
 
-/** Nœud de l'arbre de Huffman : une feuille porte un symbole, un nœud interne porte la fréquence cumulée. */
+/**
+ * Nœud de l'arbre de Huffman : une feuille porte un symbole, un nœud interne porte la fréquence cumulée.
+ * L'identifiant est attribué par {@link HuffmanTree} dans l'ordre de création (feuilles d'abord, puis fusions).
+ */
 public class HuffmanNode implements Comparable<HuffmanNode> {
+    private int id;
     private char character;
     private int frequency;
     private HuffmanNode left;
@@ -12,6 +16,8 @@ public class HuffmanNode implements Comparable<HuffmanNode> {
         this.frequency = frequency;
     }
 
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
     public char getCharacter() { return character; }
     public void setCharacter(char character) { this.character = character; }
     public int getFrequency() { return frequency; }

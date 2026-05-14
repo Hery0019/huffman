@@ -1,6 +1,5 @@
 package hery.itu.servlet;
 
-import com.google.gson.Gson;
 import hery.itu.huffman.HuffmanDecoder;
 import hery.itu.huffman.HuffmanEncoder;
 import hery.itu.huffman.HuffmanTree;
@@ -42,8 +41,9 @@ public class HuffmanServlet extends HttpServlet {
         request.setAttribute("decodedText", decodedText);
         request.setAttribute("frequencyMap", HuffmanTree.countFrequencies(text));
         request.setAttribute("huffmanCodes", huffmanCodes);
-        // Sérialisation JSON de l'arbre pour le rendu D3 : préoccupation de présentation, donc ici et non dans le domaine.
-        request.setAttribute("huffmanTreeJson", new Gson().toJson(tree.getRoot()));
+        // Sérialisation JSON pour le rendu D3 : préoccupation de présentation, donc ici et non dans le domaine.
+        // La trace (nœuds à plat + fusions) permet de rejouer la construction pas à pas.
+        request.setAttribute("huffmanTreeTraceJson", TreeTraceJson.of(tree));
 
         request.getRequestDispatcher(RESULT_VIEW).forward(request, response);
     }

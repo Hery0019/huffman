@@ -7,7 +7,7 @@
     String decodedText = (String) request.getAttribute("decodedText");
     Map<Character, String> huffmanCodes = (Map<Character, String>) request.getAttribute("huffmanCodes");
     Map<Character, Integer> frequencyMap = (Map<Character, Integer>) request.getAttribute("frequencyMap");
-    String huffmanTreeJson = (String) request.getAttribute("huffmanTreeJson");
+    String huffmanTreeTraceJson = (String) request.getAttribute("huffmanTreeTraceJson");
     // Vue sous WEB-INF : uniquement atteinte par HuffmanServlet, les attributs sont toujours présents.
     String pageTitle = "Résultat";
     String activeNav = "encoder";
@@ -19,6 +19,7 @@
     int fixedBits = charCount * 8;
     double gainPercent = fixedBits == 0 ? 0 : 100.0 * (1.0 - (double) huffmanBits / fixedBits);
     boolean roundTrip = originalText.equals(decodedText);
+    int mergeCount = Math.max(0, distinctCount - 1);
 
     // Lignes de la table : par fréquence décroissante, puis par symbole
     List<Map.Entry<Character, Integer>> rows = new ArrayList<>(frequencyMap.entrySet());
@@ -131,101 +132,209 @@
     </div>
 </section>
 
-<%-- Arbre --%>
+<%-- Arbre : construction pas à pas --%>
 <section class="mt-10">
-    <div class="flex items-baseline justify-between mb-3">
-        <h2 class="label">Arbre de Huffman</h2>
-        <span class="text-xs text-muted font-mono"><span class="bit-0">0</span> gauche · <span class="bit-1">1</span> droite · les nœuds internes portent la fréquence cumulée</span>
+    <div class="flex flex-wrap items-baseline justify-between gap-3 mb-3">
+        <h2 class="label">Arbre de Huffman — construction pas à pas</h2>
+        <span class="text-xs text-muted font-mono"><span class="bit-0">0</span> gauche · <span class="bit-1">1</span> droite · nœud interne = fréquence cumulée</span>
     </div>
-    <div class="card p-4 overflow-x-auto">
-        <div id="tree" class="min-h-[160px]"></div>
+    <div class="card p-4">
+        <% if (mergeCount > 0) { %>
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button type="button" id="tree-first" class="btn btn-secondary h-9 px-3 text-xs">Début</button>
+            <button type="button" id="tree-prev" class="btn btn-secondary h-9 px-3 text-xs">Précédent</button>
+            <input type="range" id="tree-step" min="0" max="<%= mergeCount %>" value="<%= mergeCount %>" step="1"
+                   class="flex-1 min-w-[160px] accent-ink" aria-label="Étape de construction">
+            <button type="button" id="tree-next" class="btn btn-secondary h-9 px-3 text-xs">Suivant</button>
+            <button type="button" id="tree-last" class="btn btn-secondary h-9 px-3 text-xs">Fin</button>
+        </div>
+        <% } %>
+        <p id="tree-caption" class="text-sm text-muted mb-3 min-h-[1.5rem]"></p>
+        <div id="tree" class="overflow-x-auto min-h-[160px]"></div>
     </div>
 </section>
 
 <script src="<%= ctx %>/assets/d3-7.9.0.min.js"></script>
 <script>
     (function () {
-        var treeData = <%= huffmanTreeJson != null ? huffmanTreeJson : "null" %>;
+        var trace = <%= huffmanTreeTraceJson != null ? huffmanTreeTraceJson : "null" %>;
         var container = document.getElementById('tree');
-        if (!treeData) {
+        var caption = document.getElementById('tree-caption');
+        if (!trace || !trace.nodes || !trace.nodes.length) {
             container.innerHTML = '<p class="text-sm text-muted p-4">Aucun arbre à afficher.</p>';
             return;
         }
 
-        var ZERO = '#2E6FA3', ONE = '#B9532B', INK = '#1C1B18', LINE = '#E2DDD2', MUTED = '#6E6A61', SURFACE = '#FFFFFF';
+        var ZERO = '#2E6FA3', ONE = '#B9532B', INK = '#1C1B18', MUTED = '#6E6A61', SURFACE = '#FFFFFF', PAPER = '#F6F3EC';
+        var MONO = '"IBM Plex Mono", ui-monospace, monospace';
         var SYMBOLS = { ' ': '␣', '\n': '↵', '\r': '␍', '\t': '⇥' };
         function label(ch) { return SYMBOLS[ch] || ch; }
-        function isLeftChild(link) { return link.source.data.left === link.target.data; }
+
+        var byId = {};
+        trace.nodes.forEach(function (n) { byId[n.id] = n; });
+        var total = trace.steps.length;
+
+        function describe(node) {
+            return node.left == null ? '« ' + label(node.character) + ' » (' + node.frequency + ')' : '∅ (' + node.frequency + ')';
+        }
+        function children(d) { return d.left == null ? null : [byId[d.left], byId[d.right]]; }
+        function isLeftChild(link) { return link.source.data.left === link.target.data.id; }
         function codeOf(node) {
             var path = node.ancestors().reverse(), bits = '';
-            for (var i = 1; i < path.length; i++) bits += (path[i - 1].data.left === path[i].data) ? '0' : '1';
+            for (var i = 1; i < path.length; i++) bits += (path[i - 1].data.left === path[i].data.id) ? '0' : '1';
             return bits;
         }
 
-        var root = d3.hierarchy(treeData, function (d) {
-            return (d.left || d.right) ? [d.left, d.right].filter(Boolean) : null;
-        });
-        var leaves = root.leaves().length;
-        var levels = root.height + 1;
-        var margin = { top: 32, right: 32, bottom: 40, left: 32 };
-        var width = Math.max(container.clientWidth, leaves * 60 + margin.left + margin.right);
-        var height = levels * 88 + margin.top + margin.bottom;
-
-        d3.tree().size([width - margin.left - margin.right, height - margin.top - margin.bottom])(root);
-
-        // Léger débordement (jusqu'à 1,6× le cadre) : l'arbre est réduit pour tenir dans la largeur.
-        // Au-delà, il garde sa taille naturelle et le cadre défile, sinon les symboles deviendraient illisibles.
-        var fitToWidth = width > container.clientWidth && width <= container.clientWidth * 1.6;
-
-        var svg = d3.select(container).append('svg')
-            .attr('width', fitToWidth ? '100%' : width)
-            .attr('height', fitToWidth ? null : height)
-            .attr('viewBox', [0, 0, width, height])
-            .attr('role', 'img')
-            .attr('aria-label', 'Arbre de Huffman : ' + leaves + ' feuilles, profondeur ' + root.height);
-        var g = svg.append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-        var links = root.links();
-
-        g.selectAll('path.link').data(links).join('path')
-            .attr('d', function (d) { return 'M' + d.source.x + ',' + d.source.y + 'L' + d.target.x + ',' + d.target.y; })
-            .attr('fill', 'none')
-            .attr('stroke', function (d) { return isLeftChild(d) ? ZERO : ONE; })
-            .attr('stroke-width', 2)
-            .attr('stroke-linecap', 'round');
-
-        var edgeLabel = g.selectAll('g.edge').data(links).join('g')
-            .attr('transform', function (d) {
-                return 'translate(' + (d.source.x + d.target.x) / 2 + ',' + (d.source.y + d.target.y) / 2 + ')';
+        /* État de la file après `step` fusions : les racines restantes, triées comme la file de priorité
+           (fréquence croissante ; à fréquence égale, la paire qui va fusionner passe devant). */
+        function forestAt(step) {
+            var alive = {};
+            trace.nodes.forEach(function (n) { if (n.left == null) alive[n.id] = true; });
+            for (var i = 0; i < step; i++) {
+                var s = trace.steps[i];
+                delete alive[s.leftId];
+                delete alive[s.rightId];
+                alive[s.parentId] = true;
+            }
+            var next = step < total ? trace.steps[step] : null;
+            function isNext(n) { return next !== null && (n.id === next.leftId || n.id === next.rightId); }
+            var roots = Object.keys(alive).map(function (id) { return byId[+id]; });
+            roots.sort(function (a, b) {
+                return (a.frequency - b.frequency) || ((isNext(a) ? 0 : 1) - (isNext(b) ? 0 : 1)) || (a.id - b.id);
             });
-        edgeLabel.append('circle').attr('r', 10).attr('fill', SURFACE)
-            .attr('stroke', function (d) { return isLeftChild(d) ? ZERO : ONE; }).attr('stroke-width', 1.5);
-        edgeLabel.append('text').attr('dy', 4).attr('text-anchor', 'middle')
-            .attr('font-family', '"IBM Plex Mono", ui-monospace, monospace').attr('font-size', 12).attr('font-weight', 600)
-            .attr('fill', function (d) { return isLeftChild(d) ? ZERO : ONE; })
-            .text(function (d) { return isLeftChild(d) ? '0' : '1'; });
+            return { roots: roots, next: next, isNext: isNext };
+        }
 
-        var node = g.selectAll('g.node').data(root.descendants()).join('g')
-            .attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+        function drawTree(g, root, highlighted) {
+            var links = root.links();
+            g.selectAll('path.link').data(links).join('path')
+                .attr('d', function (d) { return 'M' + d.source.x + ',' + d.source.y + 'L' + d.target.x + ',' + d.target.y; })
+                .attr('fill', 'none')
+                .attr('stroke', function (d) { return isLeftChild(d) ? ZERO : ONE; })
+                .attr('stroke-width', 2).attr('stroke-linecap', 'round');
 
-        var internal = node.filter(function (d) { return d.children; });
-        internal.append('circle').attr('r', 17).attr('fill', SURFACE).attr('stroke', INK).attr('stroke-width', 1.5);
-        internal.append('text').attr('dy', 4).attr('text-anchor', 'middle')
-            .attr('font-family', '"IBM Plex Mono", ui-monospace, monospace').attr('font-size', 11).attr('fill', INK)
-            .text(function (d) { return d.data.frequency; });
-        internal.append('title').text(function (d) { return 'Fréquence cumulée : ' + d.data.frequency; });
+            var edge = g.selectAll('g.edge').data(links).join('g')
+                .attr('transform', function (d) { return 'translate(' + (d.source.x + d.target.x) / 2 + ',' + (d.source.y + d.target.y) / 2 + ')'; });
+            edge.append('circle').attr('r', 10).attr('fill', SURFACE)
+                .attr('stroke', function (d) { return isLeftChild(d) ? ZERO : ONE; }).attr('stroke-width', 1.5);
+            edge.append('text').attr('dy', 4).attr('text-anchor', 'middle')
+                .attr('font-family', MONO).attr('font-size', 12).attr('font-weight', 600)
+                .attr('fill', function (d) { return isLeftChild(d) ? ZERO : ONE; })
+                .text(function (d) { return isLeftChild(d) ? '0' : '1'; });
 
-        var leaf = node.filter(function (d) { return !d.children; });
-        leaf.append('rect').attr('x', -19).attr('y', -16).attr('width', 38).attr('height', 32).attr('rx', 8).attr('fill', INK);
-        leaf.append('text').attr('dy', 5).attr('text-anchor', 'middle')
-            .attr('font-family', '"IBM Plex Mono", ui-monospace, monospace').attr('font-size', 14).attr('font-weight', 500).attr('fill', '#F6F3EC')
-            .text(function (d) { return label(d.data.character); });
-        leaf.append('text').attr('dy', 30).attr('text-anchor', 'middle')
-            .attr('font-family', '"IBM Plex Mono", ui-monospace, monospace').attr('font-size', 10).attr('fill', MUTED)
-            .text(function (d) { return d.data.frequency; });
-        leaf.append('title').text(function (d) {
-            return 'Symbole « ' + label(d.data.character) + ' » · fréquence ' + d.data.frequency + ' · code ' + (codeOf(d) || '0');
-        });
+            var node = g.selectAll('g.node').data(root.descendants()).join('g')
+                .attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')'; });
+
+            var internal = node.filter(function (d) { return d.children; });
+            internal.append('circle').attr('r', 17).attr('fill', SURFACE).attr('stroke', INK).attr('stroke-width', 1.5);
+            internal.append('text').attr('dy', 4).attr('text-anchor', 'middle')
+                .attr('font-family', MONO).attr('font-size', 11).attr('fill', INK)
+                .text(function (d) { return d.data.frequency; });
+            internal.append('title').text(function (d) { return 'Fréquence cumulée : ' + d.data.frequency; });
+
+            var leaf = node.filter(function (d) { return !d.children; });
+            leaf.append('rect').attr('x', -19).attr('y', -16).attr('width', 38).attr('height', 32).attr('rx', 8).attr('fill', INK);
+            leaf.append('text').attr('dy', 5).attr('text-anchor', 'middle')
+                .attr('font-family', MONO).attr('font-size', 14).attr('font-weight', 500).attr('fill', PAPER)
+                .text(function (d) { return label(d.data.character); });
+            leaf.append('text').attr('dy', 30).attr('text-anchor', 'middle')
+                .attr('font-family', MONO).attr('font-size', 10).attr('fill', MUTED)
+                .text(function (d) { return d.data.frequency; });
+            leaf.append('title').text(function (d) {
+                return 'Symbole « ' + label(d.data.character) + ' » · fréquence ' + d.data.frequency + ' · code ' + (codeOf(d) || '0');
+            });
+
+            if (highlighted) {
+                // Anneau pointillé autour de la racine : c'est elle qui va fusionner à l'étape suivante.
+                g.append('circle').attr('cx', root.x).attr('cy', root.y).attr('r', root.children ? 25 : 30)
+                    .attr('fill', 'none').attr('stroke', ONE).attr('stroke-width', 2).attr('stroke-dasharray', '5 4');
+            }
+        }
+
+        function render(step) {
+            container.innerHTML = '';
+            var forest = forestAt(step);
+            var LEVEL = 88, gap = 24, rowGap = 32, margin = { top: 36, right: 32, bottom: 40, left: 32 };
+            var trees = forest.roots.map(function (r) {
+                var h = d3.hierarchy(r, children);
+                // Hauteur utile : profondeur × niveau, plus la feuille la plus basse et son étiquette de fréquence.
+                return { root: h, w: Math.max(h.leaves().length * 60, 64), h: h.height * LEVEL + 48 };
+            });
+
+            // Les arbres de la forêt se placent en lignes, comme du texte : une ligne pleine passe à la suivante.
+            var available = Math.max(container.clientWidth, 480) - margin.left - margin.right;
+            var rows = [], row = { trees: [], w: 0, h: 0 };
+            trees.forEach(function (t) {
+                var extra = (row.trees.length ? gap : 0) + t.w;
+                if (row.trees.length && row.w + extra > available) {
+                    rows.push(row);
+                    row = { trees: [], w: 0, h: 0 };
+                    extra = t.w;
+                }
+                row.trees.push(t);
+                row.w += extra;
+                row.h = Math.max(row.h, t.h);
+            });
+            rows.push(row);
+
+            var width = margin.left + margin.right + Math.max.apply(null, rows.map(function (r) { return r.w; }));
+            var height = margin.top + margin.bottom + rowGap * (rows.length - 1)
+                + rows.reduce(function (sum, r) { return sum + r.h; }, 0);
+            // Un arbre seul plus large que le cadre (≤ 1,6×) est réduit pour tenir ; au-delà, le cadre défile.
+            var fitToWidth = width > container.clientWidth && width <= container.clientWidth * 1.6;
+
+            var svg = d3.select(container).append('svg')
+                .attr('width', fitToWidth ? '100%' : width)
+                .attr('height', fitToWidth ? null : height)
+                .attr('viewBox', [0, 0, width, height])
+                .attr('role', 'img')
+                .attr('aria-label', 'Construction de l’arbre de Huffman, étape ' + step + ' sur ' + total);
+
+            var y = margin.top;
+            rows.forEach(function (r) {
+                var x = margin.left;
+                r.trees.forEach(function (t) {
+                    d3.tree().size([t.w, t.root.height * LEVEL])(t.root);
+                    var g = svg.append('g').attr('transform', 'translate(' + x + ',' + y + ')');
+                    drawTree(g, t.root, forest.isNext(t.root.data));
+                    x += t.w + gap;
+                });
+                y += r.h + rowGap;
+            });
+
+            if (total === 0) {
+                caption.textContent = 'Un seul symbole : l’arbre est réduit à une feuille, qui reçoit le code 0.';
+            } else if (step === 0) {
+                caption.textContent = 'Départ — ' + forest.roots.length + ' feuilles dans la file, triées par fréquence. '
+                    + 'Les deux plus petites (entourées) vont fusionner : ' + describe(byId[forest.next.leftId])
+                    + ' + ' + describe(byId[forest.next.rightId]) + ' → ' + forest.next.frequency + '.';
+            } else if (step < total) {
+                caption.textContent = 'Après ' + step + ' fusion' + (step > 1 ? 's' : '') + ' sur ' + total
+                    + ' — prochaine : ' + describe(byId[forest.next.leftId]) + ' + ' + describe(byId[forest.next.rightId])
+                    + ' → ' + forest.next.frequency + '.';
+            } else {
+                caption.textContent = 'Terminé après ' + total + ' fusions : une seule racine, de fréquence '
+                    + forest.roots[0].frequency + ' (la longueur du texte).';
+            }
+        }
+
+        var current = total;
+        var slider = document.getElementById('tree-step');
+        function goTo(step) {
+            current = Math.max(0, Math.min(total, step));
+            if (slider) slider.value = current;
+            render(current);
+            if (history.replaceState) history.replaceState(null, '', '#etape=' + current);
+        }
+        if (slider) {
+            slider.addEventListener('input', function () { goTo(+slider.value); });
+            document.getElementById('tree-first').addEventListener('click', function () { goTo(0); });
+            document.getElementById('tree-prev').addEventListener('click', function () { goTo(current - 1); });
+            document.getElementById('tree-next').addEventListener('click', function () { goTo(current + 1); });
+            document.getElementById('tree-last').addEventListener('click', function () { goTo(total); });
+        }
+        var fromHash = /#etape=(\d+)/.exec(location.hash);
+        goTo(fromHash ? +fromHash[1] : total);
     })();
 </script>
 

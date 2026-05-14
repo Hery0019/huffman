@@ -4,7 +4,8 @@ Application web pédagogique (Jakarta Servlet 6 / JSP, Tomcat 10.1, PostgreSQL) 
 la compression de Huffman de deux façons :
 
 - **Parcours automatique** — saisir un texte : fréquences, arbre, codes, texte encodé, décodage
-  de contrôle, taux de compression et arbre dessiné. Aucune base de données nécessaire.
+  de contrôle, taux de compression, et **construction de l'arbre rejouable pas à pas** (file de
+  priorité, fusions successives, paire suivante mise en évidence). Aucune base de données nécessaire.
 - **Parcours manuel** — construire soi-même un dictionnaire (caractère → code binaire), persisté
   en base, puis coder un texte avec. L'application refuse les codes ambigus (doublons, préfixes).
 

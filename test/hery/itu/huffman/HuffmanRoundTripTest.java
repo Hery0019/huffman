@@ -79,6 +79,42 @@ class HuffmanRoundTripTest {
     }
 
     @Test
+    void mergeTraceReplaysToTheSameTree() {
+        HuffmanTree tree = HuffmanTree.fromText("hello huffman");
+        List<HuffmanNode> nodes = tree.getNodes();
+        List<HuffmanTree.MergeStep> steps = tree.getSteps();
+
+        int distinct = HuffmanTree.countFrequencies("hello huffman").size();
+        assertEquals(distinct - 1, steps.size(), "k symboles → k-1 fusions");
+        assertEquals(2 * distinct - 1, nodes.size(), "k feuilles + k-1 parents");
+        for (int i = 0; i < nodes.size(); i++) {
+            assertEquals(i, nodes.get(i).getId(), "identifiants dans l'ordre de création");
+        }
+
+        // Rejouer les fusions : on doit finir avec exactement une racine, celle de l'arbre.
+        java.util.Set<Integer> forest = new java.util.HashSet<>();
+        for (HuffmanNode node : nodes) {
+            if (node.isLeaf()) forest.add(node.getId());
+        }
+        for (HuffmanTree.MergeStep step : steps) {
+            assertTrue(forest.remove(step.leftId()), "le fils gauche est dans la file");
+            assertTrue(forest.remove(step.rightId()), "le fils droit est dans la file");
+            HuffmanNode parent = nodes.get(step.parentId());
+            assertEquals(step.frequency(), parent.getFrequency());
+            assertEquals(nodes.get(step.leftId()).getFrequency() + nodes.get(step.rightId()).getFrequency(), step.frequency());
+            forest.add(step.parentId());
+        }
+        assertEquals(java.util.Set.of(tree.getRoot().getId()), forest);
+    }
+
+    @Test
+    void singleSymbolHasNoMergeStep() {
+        HuffmanTree tree = HuffmanTree.fromText("zzz");
+        assertTrue(tree.getSteps().isEmpty());
+        assertEquals(1, tree.getNodes().size());
+    }
+
+    @Test
     void encoderRejectsSymbolWithoutCode() {
         HuffmanEncoder encoder = new HuffmanEncoder(HuffmanTree.fromText("ab").generateCodes());
         assertThrows(IllegalArgumentException.class, () -> encoder.encode("abc"));
