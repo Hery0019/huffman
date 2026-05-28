@@ -1,7 +1,14 @@
 package hery.itu.huffman;
 
-/** Décode une chaîne de bits en parcourant l'arbre : 0 à gauche, 1 à droite, symbole émis à chaque feuille. */
+/** Décode une suite de bits en parcourant l'arbre : 0 à gauche, 1 à droite, symbole émis à chaque feuille. */
 public class HuffmanDecoder {
+
+    /** Source de bits (0 ou 1), par exemple un flux binaire ; lève une exception si la source est épuisée. */
+    @FunctionalInterface
+    public interface BitSource {
+        int nextBit();
+    }
+
     private final HuffmanNode root;
 
     public HuffmanDecoder(HuffmanNode root) {
@@ -9,6 +16,8 @@ public class HuffmanDecoder {
     }
 
     /**
+     * Décode une chaîne de caractères '0' / '1' jusqu'au bout.
+     *
      * @throws IllegalArgumentException si la chaîne contient autre chose que des 0 et des 1,
      *         ou si elle se termine au milieu d'un code
      */
@@ -41,6 +50,32 @@ public class HuffmanDecoder {
         }
         if (current != root) {
             throw new IllegalArgumentException("Séquence incomplète : les derniers bits ne forment pas un code entier");
+        }
+        return decoded.toString();
+    }
+
+    /**
+     * Décode exactement {@code symbolCount} symboles depuis une source de bits, puis s'arrête :
+     * les bits de bourrage qui suivent dans un fichier ne sont pas lus.
+     */
+    public String decode(BitSource bits, int symbolCount) {
+        if (symbolCount == 0) {
+            return "";
+        }
+        if (root == null) {
+            throw new IllegalArgumentException("Arbre vide : impossible de décoder");
+        }
+        StringBuilder decoded = new StringBuilder(symbolCount);
+        for (int i = 0; i < symbolCount; i++) {
+            HuffmanNode current = root;
+            if (current.isLeaf()) {
+                bits.nextBit(); // un bit par occurrence, comme à l'encodage
+            } else {
+                while (!current.isLeaf()) {
+                    current = (bits.nextBit() == 0) ? current.getLeft() : current.getRight();
+                }
+            }
+            decoded.append(current.getCharacter());
         }
         return decoded.toString();
     }

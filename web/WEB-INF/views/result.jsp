@@ -8,9 +8,14 @@
     Map<Character, String> huffmanCodes = (Map<Character, String>) request.getAttribute("huffmanCodes");
     Map<Character, Integer> frequencyMap = (Map<Character, Integer>) request.getAttribute("frequencyMap");
     String huffmanTreeTraceJson = (String) request.getAttribute("huffmanTreeTraceJson");
+    int textUtf8Bytes = (Integer) request.getAttribute("textUtf8Bytes");
+    int fileBytes = (Integer) request.getAttribute("fileBytes");
+    int fileTreeBits = (Integer) request.getAttribute("fileTreeBits");
+    int fileDataBits = (Integer) request.getAttribute("fileDataBits");
     // Vue sous WEB-INF : uniquement atteinte par HuffmanServlet, les attributs sont toujours présents.
     String pageTitle = "Résultat";
     String activeNav = "encoder";
+    double fileGainPercent = textUtf8Bytes == 0 ? 0 : 100.0 * (1.0 - (double) fileBytes / textUtf8Bytes);
 
     // Indicateurs (présentation uniquement)
     int charCount = originalText.length();
@@ -96,6 +101,45 @@
         </div>
     </div>
     <p class="bits mt-4"><%= Html.bits(encodedText) %></p>
+</section>
+
+<%-- Fichier compressé réel --%>
+<section class="card p-6 mt-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h2 class="label">Fichier compressé <span class="font-mono normal-case tracking-normal text-ink ml-1">.huf</span></h2>
+            <p class="text-sm text-muted mt-1">
+                La suite de bits ci-dessus est affichée avec un caractère par bit. Dans un vrai fichier, les bits sont
+                tassés huit par octet, précédés de l'arbre (nécessaire pour décoder) et d'un en-tête.
+            </p>
+        </div>
+        <form action="<%= ctx %>/compress" method="post">
+            <%-- Le saut de ligne après la balise ouvrante est ignoré par le navigateur : il protège un texte commençant par un retour à la ligne. --%>
+            <textarea name="text" hidden aria-hidden="true">
+<%= Html.esc(originalText) %></textarea>
+            <button type="submit" class="btn btn-primary h-9 px-3 text-xs">Télécharger .huf</button>
+        </form>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+        <div class="rounded-lg bg-soft px-4 py-3">
+            <p class="text-xs text-muted">Texte en UTF-8</p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%,d", textUtf8Bytes) %> <span class="text-sm font-normal text-muted">octets</span></p>
+        </div>
+        <div class="rounded-lg bg-soft px-4 py-3">
+            <p class="text-xs text-muted">Fichier .huf</p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%,d", fileBytes) %> <span class="text-sm font-normal text-muted">octets</span></p>
+        </div>
+        <div class="rounded-lg bg-soft px-4 py-3">
+            <p class="text-xs text-muted">Dont en-tête et arbre</p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%,d", 8 * hery.itu.huffman.HuffmanFile.HEADER_BYTES + fileTreeBits) %> <span class="text-sm font-normal text-muted">bits</span></p>
+            <p class="text-xs text-muted mt-0.5">données : <%= String.format(fr, "%,d", fileDataBits) %> bits</p>
+        </div>
+        <div class="rounded-lg bg-ink text-paper px-4 py-3">
+            <p class="text-xs text-paper/70">Gain réel</p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%.1f", fileGainPercent) %> %</p>
+            <p class="text-xs text-paper/70 mt-0.5"><%= fileGainPercent < 0 ? "le fichier est plus gros que le texte : trop court pour amortir l'arbre" : "par rapport au texte UTF-8" %></p>
+        </div>
+    </div>
 </section>
 
 <%-- Table des symboles --%>

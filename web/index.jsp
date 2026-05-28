@@ -28,6 +28,16 @@
                 <button type="submit" class="btn btn-primary">Construire l'arbre et encoder</button>
             </div>
         </form>
+
+        <form action="<%= ctx %>/decompress" method="post" enctype="multipart/form-data" class="mt-4 card p-6">
+            <label for="file" class="label">Décompresser un fichier <span class="font-mono normal-case tracking-normal">.huf</span></label>
+            <p class="text-sm text-muted mt-1">Un fichier produit par « Télécharger .huf » sur la page de résultat. L'arbre est lu dans le fichier, puis le texte est restitué.</p>
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+                <input id="file" name="file" type="file" accept=".huf,application/octet-stream" required
+                       class="text-sm text-muted file:mr-3 file:btn file:btn-secondary file:h-9 file:px-3 file:text-xs file:cursor-pointer">
+                <button type="submit" class="btn btn-secondary">Décompresser</button>
+            </div>
+        </form>
     </div>
 
     <aside class="lg:pt-12">

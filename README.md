@@ -6,6 +6,8 @@ la compression de Huffman de deux façons :
 - **Parcours automatique** — saisir un texte : fréquences, arbre, codes, texte encodé, décodage
   de contrôle, taux de compression, et **construction de l'arbre rejouable pas à pas** (file de
   priorité, fusions successives, paire suivante mise en évidence). Aucune base de données nécessaire.
+- **Fichier compressé réel** — téléchargement d'un `.huf` binaire (en-tête, arbre en pré-ordre, bits
+  tassés par octet) avec sa taille exacte face au texte UTF-8, et décompression d'un `.huf` depuis l'accueil.
 - **Parcours manuel** — construire soi-même un dictionnaire (caractère → code binaire), persisté
   en base, puis coder un texte avec. L'application refuse les codes ambigus (doublons, préfixes).
 
@@ -97,10 +99,12 @@ encodage par point de code.
 ```
 src/hery/itu/
   huffman/   cœur algorithmique, sans dépendance web ni base
-             HuffmanTree (fréquences, arbre, codes), HuffmanEncoder, HuffmanDecoder,
-             DictionaryValidator (règles d'admission), DictionaryEncoder (encodage par dictionnaire)
+             HuffmanTree (fréquences, arbre, codes, trace des fusions), HuffmanEncoder, HuffmanDecoder,
+             HuffmanFile (format binaire .huf), DictionaryValidator (règles d'admission),
+             DictionaryEncoder (encodage par dictionnaire)
   base/      Database (connexion configurée par l'environnement), DictionaryRepository (table dico)
-  servlet/   points d'entrée HTTP : /huffman, /insertDictionary, /clearDictionary, /encodeText
+  servlet/   points d'entrée HTTP : /huffman, /compress, /decompress, /insertDictionary,
+             /clearDictionary, /encodeText
   web/       filtres : page d'erreur applicative, contrôle d'origine des POST (CSRF)
   util/      Html : échappement et rendu des bits pour les vues
 web/

@@ -2,6 +2,7 @@ package hery.itu.servlet;
 
 import hery.itu.huffman.HuffmanDecoder;
 import hery.itu.huffman.HuffmanEncoder;
+import hery.itu.huffman.HuffmanFile;
 import hery.itu.huffman.HuffmanTree;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -36,11 +37,18 @@ public class HuffmanServlet extends HttpServlet {
         String encodedText = new HuffmanEncoder(huffmanCodes).encode(text);
         String decodedText = new HuffmanDecoder(tree.getRoot()).decode(encodedText);
 
+        // Taille réelle du fichier binaire : la chaîne de bits affichée est huit fois plus grosse que les bits.
+        HuffmanFile.Compressed compressed = HuffmanFile.compress(text);
+
         request.setAttribute("originalText", text);
         request.setAttribute("encodedText", encodedText);
         request.setAttribute("decodedText", decodedText);
         request.setAttribute("frequencyMap", HuffmanTree.countFrequencies(text));
         request.setAttribute("huffmanCodes", huffmanCodes);
+        request.setAttribute("textUtf8Bytes", HuffmanFile.utf8Size(text));
+        request.setAttribute("fileBytes", compressed.totalBytes());
+        request.setAttribute("fileTreeBits", compressed.treeBits());
+        request.setAttribute("fileDataBits", compressed.dataBits());
         // Sérialisation JSON pour le rendu D3 : préoccupation de présentation, donc ici et non dans le domaine.
         // La trace (nœuds à plat + fusions) permet de rejouer la construction pas à pas.
         request.setAttribute("huffmanTreeTraceJson", TreeTraceJson.of(tree));
