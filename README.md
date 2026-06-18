@@ -9,7 +9,9 @@ la compression de Huffman de deux façons :
 - **Fichier compressé réel** — téléchargement d'un `.huf` binaire (en-tête, arbre en pré-ordre, bits
   tassés par octet) avec sa taille exacte face au texte UTF-8, et décompression d'un `.huf` depuis l'accueil.
 - **Parcours manuel** — construire soi-même un dictionnaire (caractère → code binaire), persisté
-  en base, puis coder un texte avec. L'application refuse les codes ambigus (doublons, préfixes).
+  en base, puis coder un texte avec, et **décoder une suite de bits** (erreur localisée au bit près :
+  caractère étranger, bits sans code, séquence incomplète). L'application refuse les codes ambigus
+  (doublons, préfixes).
 
 Usage prévu : un poste, un utilisateur, pas d'authentification.
 
@@ -101,10 +103,10 @@ src/hery/itu/
   huffman/   cœur algorithmique, sans dépendance web ni base
              HuffmanTree (fréquences, arbre, codes, trace des fusions), HuffmanEncoder, HuffmanDecoder,
              HuffmanFile (format binaire .huf), DictionaryValidator (règles d'admission),
-             DictionaryEncoder (encodage par dictionnaire)
+             DictionaryEncoder / DictionaryDecoder (codage et décodage par dictionnaire)
   base/      Database (connexion configurée par l'environnement), DictionaryRepository (table dico)
   servlet/   points d'entrée HTTP : /huffman, /compress, /decompress, /insertDictionary,
-             /clearDictionary, /encodeText
+             /clearDictionary, /encodeText, /decodeText
   web/       filtres : page d'erreur applicative, contrôle d'origine des POST (CSRF)
   util/      Html : échappement et rendu des bits pour les vues
 web/

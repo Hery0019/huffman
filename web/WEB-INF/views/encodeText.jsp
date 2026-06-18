@@ -56,9 +56,13 @@
         <div class="card p-6">
             <div class="flex items-baseline justify-between gap-4">
                 <h2 class="label">Texte codé <span class="font-mono normal-case tracking-normal text-ink ml-1"><%= encodedText.length() %> bits</span></h2>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                     <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-encoded="<%= Html.esc(encodedText) %>" onclick="copyEncoded(this)">Copier</button>
                     <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-encoded="<%= Html.esc(encodedText) %>" data-filename="huffman_dictionnaire.txt" onclick="downloadEncoded(this)">Télécharger .txt</button>
+                    <form action="<%= ctx %>/decodeText" method="post">
+                        <input type="hidden" name="bits" value="<%= Html.esc(encodedText) %>">
+                        <button type="submit" class="btn btn-primary h-9 px-3 text-xs">Décoder cette séquence</button>
+                    </form>
                 </div>
             </div>
             <p class="bits mt-4"><%= Html.bits(encodedText) %></p>

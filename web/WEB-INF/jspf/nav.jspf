@@ -17,7 +17,8 @@
         <nav class="flex items-center gap-1" aria-label="Navigation principale">
             <a href="<%= ctx %>/index.jsp" class="nav-link <%= "encoder".equals(activeNav) ? "nav-link-active" : "" %>">Encoder un texte</a>
             <a href="<%= ctx %>/insertDictionary" class="nav-link <%= "dictionnaire".equals(activeNav) ? "nav-link-active" : "" %>">Dictionnaire</a>
-            <a href="<%= ctx %>/encodeText" class="nav-link <%= "coder".equals(activeNav) ? "nav-link-active" : "" %>">Coder avec le dictionnaire</a>
+            <a href="<%= ctx %>/encodeText" class="nav-link <%= "coder".equals(activeNav) ? "nav-link-active" : "" %>">Coder</a>
+            <a href="<%= ctx %>/decodeText" class="nav-link <%= "decoder".equals(activeNav) ? "nav-link-active" : "" %>">Décoder</a>
         </nav>
     </div>
 </header>
