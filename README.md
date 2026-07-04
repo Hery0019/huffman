@@ -17,14 +17,14 @@ Usage prévu : un poste, un utilisateur, pas d'authentification.
 
 ## Aperçu
 
-**Accueil** — saisie du texte et rappel des trois étapes de l'algorithme.
+**Accueil** — saisie du texte, rappel des trois étapes de l'algorithme, décompression d'un fichier `.huf`.
 
-![Accueil : formulaire de saisie et les trois étapes](docs/screenshots/accueil.png)
+![Accueil : formulaire de saisie, les trois étapes, décompression](docs/screenshots/accueil.png)
 
 **Résultat** — indicateurs de compression, contrôle de l'aller-retour, texte encodé (0 en bleu, 1 en terre cuite),
-table des fréquences et codes, arbre de Huffman avec les bits sur les arêtes.
+taille réelle du fichier `.huf`, table des fréquences et codes, arbre de Huffman rejouable pas à pas.
 
-![Résultat : indicateurs, texte encodé, table des codes et arbre](docs/screenshots/resultat.png)
+![Résultat : indicateurs, texte encodé, fichier compressé, table des codes et arbre pas à pas](docs/screenshots/resultat.png)
 
 **Dictionnaire** — saisie d'un couple caractère / code, avec validation (doublons, préfixes) et messages explicites.
 
@@ -33,6 +33,10 @@ table des fréquences et codes, arbre de Huffman avec les bits sur les arêtes.
 **Codage par dictionnaire** — les caractères sans code sont signalés par `?` et listés sous le résultat.
 
 ![Codage par dictionnaire : texte codé et symboles absents](docs/screenshots/codage.png)
+
+**Décodage par dictionnaire** — la suite de bits est relue avec le dictionnaire ; une erreur est localisée au bit près.
+
+![Décodage par dictionnaire : texte décodé et suite de bits](docs/screenshots/decodage.png)
 
 ## Prérequis
 
