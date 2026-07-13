@@ -6,6 +6,8 @@ la compression de Huffman de deux façons :
 - **Parcours automatique** — saisir un texte : fréquences, arbre, codes, texte encodé, décodage
   de contrôle, taux de compression, et **construction de l'arbre rejouable pas à pas** (file de
   priorité, fusions successives, paire suivante mise en évidence). Aucune base de données nécessaire.
+- **Cas remarquables** — sur l'accueil, six exemples en un clic (équiprobable, très déséquilibré, un seul
+  symbole, deux symboles, arbre en peigne, phrase française) avec l'explication de ce qu'ils illustrent.
 - **Fichier compressé réel** — téléchargement d'un `.huf` binaire (en-tête, arbre en pré-ordre, bits
   tassés par octet) avec sa taille exacte face au texte UTF-8, et décompression d'un `.huf` depuis l'accueil.
 - **Parcours manuel** — construire soi-même un dictionnaire (caractère → code binaire), persisté

@@ -27,7 +27,40 @@
                 <span class="text-xs text-muted">Chaque caractère compte, espaces compris.</span>
                 <button type="submit" class="btn btn-primary">Construire l'arbre et encoder</button>
             </div>
+
+            <%-- Cas remarquables : chaque bouton remplit la zone de texte, la soumission reste manuelle. --%>
+            <div class="mt-5 pt-4 border-t border-line">
+                <p class="label">Cas remarquables</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-example="abcdefgh"
+                            title="8 symboles de même fréquence : arbre équilibré, 3 bits chacun, c'est un codage fixe">Équiprobable</button>
+                    <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-example="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbcccd"
+                            title="Un symbole domine : il reçoit 1 bit, les rares en reçoivent jusqu'à 4">Très déséquilibré</button>
+                    <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-example="aaaaaaaa"
+                            title="Aucune fusion possible : l'arbre est une feuille, le code vaut 0 par convention">Un seul symbole</button>
+                    <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-example="aabbbbbbbb"
+                            title="Une seule fusion : 1 bit par symbole quelle que soit la fréquence">Deux symboles</button>
+                    <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-example="aaaaaaaabbbbccd"
+                            title="Fréquences 8, 4, 2, 1 : chaque fusion absorbe le symbole suivant, l'arbre devient un peigne avec un bit de plus par niveau">Arbre en peigne</button>
+                    <button type="button" class="btn btn-secondary h-9 px-3 text-xs" data-example="Portez ce vieux whisky au juge blond qui fume."
+                            title="Pangramme : toutes les lettres de l'alphabet, fréquences réalistes du français">Phrase française</button>
+                </div>
+                <p id="example-hint" class="text-xs text-muted mt-2 min-h-[1rem]"></p>
+            </div>
         </form>
+        <script>
+            (function () {
+                var textarea = document.getElementById('text');
+                var hint = document.getElementById('example-hint');
+                document.querySelectorAll('[data-example]').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        textarea.value = button.getAttribute('data-example');
+                        hint.textContent = button.getAttribute('title');
+                        textarea.focus();
+                    });
+                });
+            })();
+        </script>
 
         <form action="<%= ctx %>/decompress" method="post" enctype="multipart/form-data" class="mt-4 card p-6">
             <label for="file" class="label">Décompresser un fichier <span class="font-mono normal-case tracking-normal">.huf</span></label>
