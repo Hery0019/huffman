@@ -12,6 +12,7 @@
     int fileBytes = (Integer) request.getAttribute("fileBytes");
     int fileTreeBits = (Integer) request.getAttribute("fileTreeBits");
     int fileDataBits = (Integer) request.getAttribute("fileDataBits");
+    hery.itu.huffman.CodeStatistics statistics = (hery.itu.huffman.CodeStatistics) request.getAttribute("statistics");
     // Vue sous WEB-INF : uniquement atteinte par HuffmanServlet, les attributs sont toujours présents.
     String pageTitle = "Résultat";
     String activeNav = "encoder";
@@ -140,6 +141,58 @@
             <p class="text-xs text-paper/70 mt-0.5"><%= fileGainPercent < 0 ? "le fichier est plus gros que le texte : trop court pour amortir l'arbre" : "par rapport au texte UTF-8" %></p>
         </div>
     </div>
+</section>
+
+<%-- Théorie : entropie, longueur moyenne, Kraft --%>
+<%
+    int fixedBitsMin = statistics.fixedBitsTotal();
+    double gainVsFixed = fixedBitsMin == 0 ? 0 : 100.0 * (1.0 - (double) huffmanBits / fixedBitsMin);
+    String kraftReading;
+    if (Math.abs(statistics.kraftSum() - 1.0) < 1e-9) {
+        kraftReading = "code complet : chaque feuille de l'arbre est utilisée";
+    } else if (statistics.kraftSum() < 1.0) {
+        kraftReading = "il reste des mots de code inutilisés";
+    } else {
+        kraftReading = "impossible pour un code préfixe";
+    }
+%>
+<section class="card p-6 mt-6">
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <h2 class="label">Théorie</h2>
+            <p class="text-sm text-muted mt-1">
+                L'entropie H est la longueur moyenne minimale qu'aucun code ne peut battre ;
+                Huffman s'en approche à moins d'un bit par symbole, et l'atteint quand les fréquences sont des puissances de 2.
+            </p>
+        </div>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+        <div class="rounded-lg bg-soft px-4 py-3">
+            <p class="text-xs text-muted">Entropie H</p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%.3f", statistics.entropy()) %> <span class="text-sm font-normal text-muted">bit/symbole</span></p>
+        </div>
+        <div class="rounded-lg bg-soft px-4 py-3">
+            <p class="text-xs text-muted">Longueur moyenne L</p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%.3f", statistics.averageLength()) %> <span class="text-sm font-normal text-muted">bit/symbole</span></p>
+        </div>
+        <div class="rounded-lg bg-soft px-4 py-3">
+            <p class="text-xs text-muted">Efficacité H / L</p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%.1f", 100 * statistics.efficiency()) %> %</p>
+            <% if (distinctCount == 1) { %><p class="text-xs text-muted mt-0.5">un seul symbole n'apporte aucune information</p><% } %>
+        </div>
+        <div class="rounded-lg bg-soft px-4 py-3">
+            <p class="text-xs text-muted">Somme de Kraft Σ 2<sup>−ℓ</sup></p>
+            <p class="mt-1 text-xl font-semibold"><%= String.format(fr, "%.3f", statistics.kraftSum()) %></p>
+            <p class="text-xs text-muted mt-0.5"><%= kraftReading %></p>
+        </div>
+    </div>
+    <p class="text-sm text-muted mt-4">
+        Codage fixe minimal : ⌈log₂ <%= distinctCount %>⌉ = <%= statistics.fixedLength() %> bit<%= statistics.fixedLength() > 1 ? "s" : "" %> par symbole,
+        soit <span class="font-mono text-ink"><%= String.format(fr, "%,d", fixedBitsMin) %></span> bits ;
+        Huffman en utilise <span class="font-mono text-ink"><%= String.format(fr, "%,d", huffmanBits) %></span>
+        (<%= gainVsFixed >= 0 ? "gain" : "perte" %> de <%= String.format(fr, "%.1f", Math.abs(gainVsFixed)) %> % par rapport à ce codage fixe,
+        contre <%= String.format(fr, "%.1f", gainPercent) %> % par rapport à 8 bits).
+    </p>
 </section>
 
 <%-- Table des symboles --%>

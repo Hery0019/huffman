@@ -1,5 +1,6 @@
 package hery.itu.servlet;
 
+import hery.itu.huffman.CodeStatistics;
 import hery.itu.huffman.HuffmanDecoder;
 import hery.itu.huffman.HuffmanEncoder;
 import hery.itu.huffman.HuffmanFile;
@@ -32,7 +33,9 @@ public class HuffmanServlet extends HttpServlet {
             return;
         }
 
-        HuffmanTree tree = HuffmanTree.fromText(text);
+        Map<Character, Integer> frequencyMap = HuffmanTree.countFrequencies(text);
+        HuffmanTree tree = new HuffmanTree();
+        tree.buildTree(frequencyMap);
         Map<Character, String> huffmanCodes = tree.generateCodes();
         String encodedText = new HuffmanEncoder(huffmanCodes).encode(text);
         String decodedText = new HuffmanDecoder(tree.getRoot()).decode(encodedText);
@@ -43,8 +46,9 @@ public class HuffmanServlet extends HttpServlet {
         request.setAttribute("originalText", text);
         request.setAttribute("encodedText", encodedText);
         request.setAttribute("decodedText", decodedText);
-        request.setAttribute("frequencyMap", HuffmanTree.countFrequencies(text));
+        request.setAttribute("frequencyMap", frequencyMap);
         request.setAttribute("huffmanCodes", huffmanCodes);
+        request.setAttribute("statistics", CodeStatistics.of(frequencyMap, huffmanCodes));
         request.setAttribute("textUtf8Bytes", HuffmanFile.utf8Size(text));
         request.setAttribute("fileBytes", compressed.totalBytes());
         request.setAttribute("fileTreeBits", compressed.treeBits());

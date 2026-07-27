@@ -100,6 +100,18 @@
             <a href="<%= ctx %>/encodeText" class="text-sm">Coder un texte avec ce dictionnaire →</a>
         </div>
         <%@ include file="/WEB-INF/jspf/dictionaryTable.jspf" %>
+        <% if (!huffmanDictionary.isEmpty()) {
+               double kraft = hery.itu.huffman.CodeStatistics.kraftSum(huffmanDictionary.values());
+               boolean complete = Math.abs(kraft - 1.0) < 1e-9; %>
+        <p class="mt-3 text-sm text-muted">
+            Somme de Kraft Σ 2<sup>−ℓ</sup> = <span class="font-mono text-ink"><%= String.format(java.util.Locale.FRANCE, "%.3f", kraft) %></span> —
+            <% if (complete) { %>
+                code complet : tout nouveau code serait le préfixe d'un code existant, ou l'inverse.
+            <% } else { %>
+                il reste <span class="font-mono text-ink"><%= String.format(java.util.Locale.FRANCE, "%.3f", 1.0 - kraft) %></span> de place : d'autres codes peuvent être ajoutés sans ambiguïté.
+            <% } %>
+        </p>
+        <% } %>
     </div>
 </section>
 
