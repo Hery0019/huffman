@@ -11,6 +11,8 @@ la compression de Huffman de deux façons :
 - **Théorie** — entropie de Shannon, longueur moyenne du code, efficacité H/L, somme de Kraft et
   comparaison avec le codage fixe minimal ⌈log₂ k⌉ ; la page du dictionnaire affiche la somme de Kraft
   des codes saisis et la place restante.
+- **Shannon-Fano côte à côte** — les codes de Shannon-Fano calculés sur les mêmes fréquences, dans la
+  table des symboles, avec la longueur moyenne et le nombre de bits de chaque méthode et un verdict.
 - **Fichier compressé réel** — téléchargement d'un `.huf` binaire (en-tête, arbre en pré-ordre, bits
   tassés par octet) avec sa taille exacte face au texte UTF-8, et décompression d'un `.huf` depuis l'accueil.
 - **Parcours manuel** — construire soi-même un dictionnaire (caractère → code binaire), persisté
@@ -111,7 +113,8 @@ encodage par point de code.
 src/hery/itu/
   huffman/   cœur algorithmique, sans dépendance web ni base
              HuffmanTree (fréquences, arbre, codes, trace des fusions), HuffmanEncoder, HuffmanDecoder,
-             HuffmanFile (format binaire .huf), DictionaryValidator (règles d'admission),
+             HuffmanFile (format binaire .huf), CodeStatistics (entropie, Kraft), ShannonFano,
+             DictionaryValidator (règles d'admission),
              DictionaryEncoder / DictionaryDecoder (codage et décodage par dictionnaire)
   base/      Database (connexion configurée par l'environnement), DictionaryRepository (table dico)
   servlet/   points d'entrée HTTP : /huffman, /compress, /decompress, /insertDictionary,

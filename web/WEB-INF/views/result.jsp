@@ -13,6 +13,8 @@
     int fileTreeBits = (Integer) request.getAttribute("fileTreeBits");
     int fileDataBits = (Integer) request.getAttribute("fileDataBits");
     hery.itu.huffman.CodeStatistics statistics = (hery.itu.huffman.CodeStatistics) request.getAttribute("statistics");
+    Map<Character, String> shannonFanoCodes = (Map<Character, String>) request.getAttribute("shannonFanoCodes");
+    hery.itu.huffman.CodeStatistics shannonFanoStatistics = (hery.itu.huffman.CodeStatistics) request.getAttribute("shannonFanoStatistics");
     // Vue sous WEB-INF : uniquement atteinte par HuffmanServlet, les attributs sont toujours présents.
     String pageTitle = "Résultat";
     String activeNav = "encoder";
@@ -195,33 +197,67 @@
     </p>
 </section>
 
-<%-- Table des symboles --%>
+<%-- Table des symboles, Huffman et Shannon-Fano côte à côte --%>
+<%
+    int shannonFanoBits = 0;
+    for (Map.Entry<Character, Integer> row : rows) {
+        shannonFanoBits += row.getValue() * shannonFanoCodes.get(row.getKey()).length();
+    }
+    int extraBits = shannonFanoBits - huffmanBits;
+%>
 <section class="mt-10">
-    <div class="flex items-baseline justify-between mb-3">
-        <h2 class="label">Fréquences et codes</h2>
+    <div class="flex flex-wrap items-baseline justify-between gap-3 mb-3">
+        <h2 class="label">Fréquences et codes — Huffman et Shannon-Fano</h2>
         <span class="text-xs text-muted">Triés par fréquence décroissante</span>
     </div>
     <div class="card overflow-hidden">
+        <div class="px-5 py-4 border-b border-line grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 items-center">
+            <p class="text-sm text-muted">
+                Shannon-Fano coupe la liste triée en deux moitiés de poids proches et attribue 0 et 1, récursivement.
+                Huffman fusionne les deux plus petits poids en partant du bas. Les deux codes sont préfixes ;
+                seul Huffman est garanti optimal.
+            </p>
+            <div class="flex gap-4 text-sm">
+                <div class="rounded-lg bg-soft px-4 py-2">
+                    <p class="text-xs text-muted">Huffman</p>
+                    <p class="font-semibold"><%= String.format(fr, "%.3f", statistics.averageLength()) %> <span class="font-normal text-muted">bit/symb.</span> · <%= String.format(fr, "%,d", huffmanBits) %> bits</p>
+                </div>
+                <div class="rounded-lg bg-soft px-4 py-2">
+                    <p class="text-xs text-muted">Shannon-Fano</p>
+                    <p class="font-semibold"><%= String.format(fr, "%.3f", shannonFanoStatistics.averageLength()) %> <span class="font-normal text-muted">bit/symb.</span> · <%= String.format(fr, "%,d", shannonFanoBits) %> bits</p>
+                </div>
+                <div class="rounded-lg px-4 py-2 <%= extraBits > 0 ? "bg-one-soft text-one" : "bg-ok-soft text-ok" %>">
+                    <p class="text-xs opacity-80">Verdict</p>
+                    <p class="font-semibold"><%= extraBits > 0 ? "Shannon-Fano coûte " + extraBits + " bit" + (extraBits > 1 ? "s" : "") + " de plus" : "Même longueur totale" %></p>
+                </div>
+            </div>
+        </div>
         <table class="w-full text-sm">
             <thead>
                 <tr class="border-b border-line">
                     <th class="label text-left px-5 py-3 font-medium">Symbole</th>
                     <th class="label text-right px-5 py-3 font-medium">Fréquence</th>
-                    <th class="label text-left px-5 py-3 font-medium">Code</th>
+                    <th class="label text-left px-5 py-3 font-medium">Huffman</th>
+                    <th class="label text-right px-5 py-3 font-medium">Bits</th>
+                    <th class="label text-left px-5 py-3 font-medium">Shannon-Fano</th>
                     <th class="label text-right px-5 py-3 font-medium">Bits</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-line">
             <% for (Map.Entry<Character, Integer> row : rows) {
                    Character symbol = row.getKey();
-                   String code = huffmanCodes.get(symbol); %>
+                   String code = huffmanCodes.get(symbol);
+                   String sfCode = shannonFanoCodes.get(symbol);
+                   boolean differs = code.length() != sfCode.length(); %>
                 <tr>
                     <td class="px-5 py-2.5">
                         <span class="inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-md bg-ink text-paper font-mono font-medium"><%= Html.symbol(symbol) %></span>
                     </td>
                     <td class="px-5 py-2.5 text-right font-mono tabular-nums"><%= row.getValue() %></td>
                     <td class="px-5 py-2.5 code"><%= Html.bits(code) %></td>
-                    <td class="px-5 py-2.5 text-right font-mono text-muted tabular-nums"><%= code == null ? 0 : code.length() %></td>
+                    <td class="px-5 py-2.5 text-right font-mono text-muted tabular-nums"><%= code.length() %></td>
+                    <td class="px-5 py-2.5 code"><%= Html.bits(sfCode) %></td>
+                    <td class="px-5 py-2.5 text-right font-mono tabular-nums <%= differs ? "text-one font-semibold" : "text-muted" %>"><%= sfCode.length() %></td>
                 </tr>
             <% } %>
             </tbody>

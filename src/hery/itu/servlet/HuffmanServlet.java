@@ -5,6 +5,7 @@ import hery.itu.huffman.HuffmanDecoder;
 import hery.itu.huffman.HuffmanEncoder;
 import hery.itu.huffman.HuffmanFile;
 import hery.itu.huffman.HuffmanTree;
+import hery.itu.huffman.ShannonFano;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -49,6 +50,11 @@ public class HuffmanServlet extends HttpServlet {
         request.setAttribute("frequencyMap", frequencyMap);
         request.setAttribute("huffmanCodes", huffmanCodes);
         request.setAttribute("statistics", CodeStatistics.of(frequencyMap, huffmanCodes));
+
+        // Shannon-Fano sur les mêmes fréquences, pour comparer avec le code optimal.
+        Map<Character, String> shannonFanoCodes = ShannonFano.codes(frequencyMap);
+        request.setAttribute("shannonFanoCodes", shannonFanoCodes);
+        request.setAttribute("shannonFanoStatistics", CodeStatistics.of(frequencyMap, shannonFanoCodes));
         request.setAttribute("textUtf8Bytes", HuffmanFile.utf8Size(text));
         request.setAttribute("fileBytes", compressed.totalBytes());
         request.setAttribute("fileTreeBits", compressed.treeBits());
