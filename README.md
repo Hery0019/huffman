@@ -8,6 +8,8 @@ la compression de Huffman de deux façons :
   priorité, fusions successives, paire suivante mise en évidence). Aucune base de données nécessaire.
 - **Cas remarquables** — sur l'accueil, six exemples en un clic (équiprobable, très déséquilibré, un seul
   symbole, deux symboles, arbre en peigne, phrase française) avec l'explication de ce qu'ils illustrent.
+- **Décodage pas à pas** — la suite de bits est relue sur l'arbre final : curseur bit par bit ou symbole
+  par symbole, chemin en cours surligné dans l'arbre, texte décodé qui s'allonge, `#bit=N` dans l'URL.
 - **Théorie** — entropie de Shannon, longueur moyenne du code, efficacité H/L, somme de Kraft et
   comparaison avec le codage fixe minimal ⌈log₂ k⌉ ; la page du dictionnaire affiche la somme de Kraft
   des codes saisis et la place restante.

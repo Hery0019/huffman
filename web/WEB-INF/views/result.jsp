@@ -287,6 +287,32 @@
     </div>
 </section>
 
+<%-- Décodage pas à pas --%>
+<section class="mt-10">
+    <div class="flex flex-wrap items-baseline justify-between gap-3 mb-3">
+        <h2 class="label">Décodage pas à pas</h2>
+        <span class="text-xs text-muted">on descend dans l'arbre bit par bit ; à chaque feuille un symbole sort et on repart de la racine</span>
+    </div>
+    <div class="card p-4">
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+            <button type="button" id="decode-first" class="btn btn-secondary h-9 px-3 text-xs">Début</button>
+            <button type="button" id="decode-prev" class="btn btn-secondary h-9 px-3 text-xs">Précédent</button>
+            <input type="range" id="decode-step" min="0" max="<%= huffmanBits %>" value="0" step="1"
+                   class="flex-1 min-w-[160px] accent-ink" aria-label="Bit lu">
+            <button type="button" id="decode-next" class="btn btn-secondary h-9 px-3 text-xs">Suivant</button>
+            <button type="button" id="decode-symbol" class="btn btn-secondary h-9 px-3 text-xs">Symbole suivant</button>
+            <button type="button" id="decode-last" class="btn btn-secondary h-9 px-3 text-xs">Fin</button>
+        </div>
+        <p id="decode-caption" class="text-sm text-muted mb-3 min-h-[1.5rem]"></p>
+        <p id="decode-bits" class="bits rounded-lg bg-soft px-4 py-3"></p>
+        <div class="mt-3 flex flex-wrap items-baseline gap-3">
+            <span class="label">Texte décodé</span>
+            <p id="decode-text" class="font-mono text-[15px] leading-relaxed whitespace-pre-wrap break-words min-h-[1.5rem]"></p>
+        </div>
+        <div id="decode-tree" class="overflow-x-auto mt-3"></div>
+    </div>
+</section>
+
 <script src="<%= ctx %>/assets/d3-7.9.0.min.js"></script>
 <script>
     (function () {
@@ -300,6 +326,7 @@
 
         var ZERO = '#2E6FA3', ONE = '#B9532B', INK = '#1C1B18', MUTED = '#6E6A61', SURFACE = '#FFFFFF', PAPER = '#F6F3EC';
         var MONO = '"IBM Plex Mono", ui-monospace, monospace';
+        var LEVEL = 88; // hauteur d'un niveau de l'arbre, partagée par les deux lecteurs
         var SYMBOLS = { ' ': '␣', '\n': '↵', '\r': '␍', '\t': '⇥' };
         function label(ch) { return SYMBOLS[ch] || ch; }
 
@@ -341,6 +368,8 @@
         function drawTree(g, root, highlighted) {
             var links = root.links();
             g.selectAll('path.link').data(links).join('path')
+                .attr('class', 'link')
+                .attr('data-target', function (d) { return d.target.data.id; })
                 .attr('d', function (d) { return 'M' + d.source.x + ',' + d.source.y + 'L' + d.target.x + ',' + d.target.y; })
                 .attr('fill', 'none')
                 .attr('stroke', function (d) { return isLeftChild(d) ? ZERO : ONE; })
@@ -356,6 +385,8 @@
                 .text(function (d) { return isLeftChild(d) ? '0' : '1'; });
 
             var node = g.selectAll('g.node').data(root.descendants()).join('g')
+                .attr('class', 'node')
+                .attr('data-id', function (d) { return d.data.id; })
                 .attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')'; });
 
             var internal = node.filter(function (d) { return d.children; });
@@ -387,7 +418,7 @@
         function render(step) {
             container.innerHTML = '';
             var forest = forestAt(step);
-            var LEVEL = 88, gap = 24, rowGap = 32, margin = { top: 36, right: 32, bottom: 40, left: 32 };
+            var gap = 24, rowGap = 32, margin = { top: 36, right: 32, bottom: 40, left: 32 };
             var trees = forest.roots.map(function (r) {
                 var h = d3.hierarchy(r, children);
                 // Hauteur utile : profondeur × niveau, plus la feuille la plus basse et son étiquette de fréquence.
@@ -451,13 +482,18 @@
             }
         }
 
-        var current = total;
+        // Le fragment d'URL porte les deux positions (#etape=N&bit=M) ; il est lu une fois, avant toute mise à jour.
+        var initialHash = location.hash;
+        var current = total, decodeCurrent = 0;
+        function updateHash() {
+            if (history.replaceState) history.replaceState(null, '', '#etape=' + current + '&bit=' + decodeCurrent);
+        }
         var slider = document.getElementById('tree-step');
         function goTo(step) {
             current = Math.max(0, Math.min(total, step));
             if (slider) slider.value = current;
             render(current);
-            if (history.replaceState) history.replaceState(null, '', '#etape=' + current);
+            updateHash();
         }
         if (slider) {
             slider.addEventListener('input', function () { goTo(+slider.value); });
@@ -466,8 +502,128 @@
             document.getElementById('tree-next').addEventListener('click', function () { goTo(current + 1); });
             document.getElementById('tree-last').addEventListener('click', function () { goTo(total); });
         }
-        var fromHash = /#etape=(\d+)/.exec(location.hash);
+        var fromHash = /etape=(\d+)/.exec(initialHash);
         goTo(fromHash ? +fromHash[1] : total);
+
+        /* ---------- Décodage pas à pas : on relit les bits encodés sur l'arbre final ---------- */
+        var bitString = "<%= encodedText %>"; // uniquement des 0 et des 1
+        var bitCount = bitString.length;
+        var rootNode = byId[total > 0 ? trace.steps[total - 1].parentId : trace.nodes[0].id];
+        var singleLeaf = rootNode.left == null;
+
+        // État après i bits lus : identifiant du nœud courant, nombre de symboles émis, début du code en cours.
+        var nodeAfter = [rootNode.id], symbolsAfter = [0], startAfter = [0], symbols = [];
+        (function () {
+            var node = rootNode, start = 0;
+            for (var i = 0; i < bitCount; i++) {
+                if (singleLeaf) {
+                    symbols.push(rootNode.character);
+                    start = i + 1;
+                } else {
+                    node = bitString.charAt(i) === '0' ? byId[node.left] : byId[node.right];
+                    if (node.left == null) {
+                        symbols.push(node.character);
+                        node = rootNode;
+                        start = i + 1;
+                    }
+                }
+                nodeAfter.push(node.id);
+                symbolsAfter.push(symbols.length);
+                startAfter.push(start);
+            }
+        })();
+
+        var decodeTreeContainer = document.getElementById('decode-tree');
+        var decodeRoot = d3.hierarchy(rootNode, children);
+        (function () {
+            var w = Math.max(decodeRoot.leaves().length * 60, 64), h = decodeRoot.height * LEVEL + 48;
+            var margin = { top: 36, right: 32, bottom: 40, left: 32 };
+            var width = w + margin.left + margin.right, height = h + margin.top + margin.bottom;
+            var fit = width > decodeTreeContainer.clientWidth && width <= decodeTreeContainer.clientWidth * 1.6;
+            var svg = d3.select(decodeTreeContainer).append('svg')
+                .attr('width', fit ? '100%' : width).attr('height', fit ? null : height)
+                .attr('viewBox', [0, 0, width, height]).attr('role', 'img').attr('aria-label', 'Arbre de décodage');
+            d3.tree().size([w, decodeRoot.height * LEVEL])(decodeRoot);
+            drawTree(svg.append('g').attr('class', 'decode-root').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')'), decodeRoot, false);
+        })();
+
+        function bitSpan(bit, cls) { return '<span class="' + cls + '">' + bit + '</span>'; }
+
+        function renderDecode(i) {
+            var start = startAfter[i], count = symbolsAfter[i], currentId = nodeAfter[i];
+
+            // Fenêtre de bits autour du curseur : les bits consommés, le code en cours, le bit à lire, la suite.
+            var from = Math.max(0, i - 48), to = Math.min(bitCount, i + 48), html = from > 0 ? '<span class="text-muted">… </span>' : '';
+            for (var k = from; k < to; k++) {
+                var bit = bitString.charAt(k), cls = bit === '0' ? 'bit-0' : 'bit-1';
+                if (k < start) cls += ' opacity-40';
+                else if (k < i) cls += ' bg-white rounded-sm ring-1 ring-line';
+                else if (k === i) cls += ' underline decoration-2 underline-offset-4 font-semibold';
+                else cls += ' opacity-70';
+                html += bitSpan(bit, cls);
+            }
+            if (to < bitCount) html += '<span class="text-muted"> …</span>';
+            document.getElementById('decode-bits').innerHTML = html;
+
+            var decoded = symbols.slice(0, count);
+            var textHtml = '';
+            for (var s = 0; s < decoded.length; s++) {
+                var shown = decoded[s].replace(/&/g, '&amp;').replace(/</g, '&lt;');
+                textHtml += s === decoded.length - 1 && start === i && i > 0
+                    ? '<span class="bg-ok-soft text-ok rounded px-0.5">' + shown + '</span>' : shown;
+            }
+            document.getElementById('decode-text').innerHTML = textHtml || '<span class="text-muted italic">rien encore</span>';
+
+            var caption;
+            if (i === 0) {
+                caption = 'Départ — ' + bitCount + ' bits à lire, curseur à la racine.';
+            } else if (start === i) {
+                caption = 'Bit ' + i + ' / ' + bitCount + ' — feuille atteinte : « ' + label(symbols[count - 1]) + ' » émis, retour à la racine.';
+            } else {
+                caption = 'Bit ' + i + ' / ' + bitCount + ' — code en cours : ' + bitString.substring(start, i) + ' (' + (i - start) + ' bit' + (i - start > 1 ? 's' : '') + ' lus, pas encore une feuille).';
+            }
+            if (i === bitCount && bitCount > 0) caption += ' Terminé : ' + count + ' symbole' + (count > 1 ? 's' : '') + ' décodé' + (count > 1 ? 's' : '') + '.';
+            document.getElementById('decode-caption').textContent = caption;
+
+            // Chemin surligné dans l'arbre : de la racine au nœud courant (le code en cours).
+            var svg = d3.select(decodeTreeContainer);
+            svg.selectAll('path.link').attr('stroke-width', 2).attr('opacity', 1);
+            svg.selectAll('.decode-cursor').remove();
+            if (!singleLeaf) {
+                var onPath = {}, node = rootNode;
+                for (var b = start; b < i; b++) {
+                    node = bitString.charAt(b) === '0' ? byId[node.left] : byId[node.right];
+                    onPath[node.id] = true;
+                }
+                if (i > start) {
+                    svg.selectAll('path.link').attr('opacity', function (d) { return onPath[d.target.data.id] ? 1 : 0.35; })
+                        .attr('stroke-width', function (d) { return onPath[d.target.data.id] ? 5 : 2; });
+                }
+            }
+            var cursor = svg.selectAll('g.node').filter(function (d) { return d.data.id === currentId; });
+            cursor.append('circle').attr('class', 'decode-cursor').attr('r', cursor.datum().children ? 24 : 29)
+                .attr('fill', 'none').attr('stroke', ZERO).attr('stroke-width', 2.5).attr('stroke-dasharray', '5 4');
+        }
+
+        var decodeSlider = document.getElementById('decode-step');
+        function goToBit(i) {
+            decodeCurrent = Math.max(0, Math.min(bitCount, i));
+            decodeSlider.value = decodeCurrent;
+            renderDecode(decodeCurrent);
+            updateHash();
+        }
+        decodeSlider.addEventListener('input', function () { goToBit(+decodeSlider.value); });
+        document.getElementById('decode-first').addEventListener('click', function () { goToBit(0); });
+        document.getElementById('decode-prev').addEventListener('click', function () { goToBit(decodeCurrent - 1); });
+        document.getElementById('decode-next').addEventListener('click', function () { goToBit(decodeCurrent + 1); });
+        document.getElementById('decode-last').addEventListener('click', function () { goToBit(bitCount); });
+        document.getElementById('decode-symbol').addEventListener('click', function () {
+            var i = decodeCurrent + 1;
+            while (i < bitCount && startAfter[i] !== i) i++;
+            goToBit(Math.min(i, bitCount));
+        });
+        var bitHash = /bit=(\d+)/.exec(initialHash);
+        goToBit(bitHash ? +bitHash[1] : 0);
     })();
 </script>
 
