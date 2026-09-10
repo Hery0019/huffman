@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Vide le dictionnaire manuel. */
+/** Vide les entrées du dictionnaire courant (le dictionnaire lui-même est conservé). */
 @WebServlet("/clearDictionary")
 public class ClearDictionaryServlet extends HttpServlet {
 
@@ -27,8 +27,9 @@ public class ClearDictionaryServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String page = request.getContextPath() + "/insertDictionary";
         try {
-            repository.clear();
-            response.sendRedirect(page + "?cleared=1");
+            int dictionaryId = DictionaryAttributes.currentId(repository, request);
+            repository.clear(dictionaryId);
+            response.sendRedirect(page + "?d=" + dictionaryId + "&cleared=1");
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Vidage du dictionnaire impossible", e);
             response.sendRedirect(page + "?error=database");

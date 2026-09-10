@@ -20,7 +20,9 @@ la compression de Huffman de deux façons :
 - **Parcours manuel** — construire soi-même un dictionnaire (caractère → code binaire), persisté
   en base, puis coder un texte avec, et **décoder une suite de bits** (erreur localisée au bit près :
   caractère étranger, bits sans code, séquence incomplète). L'application refuse les codes ambigus
-  (doublons, préfixes).
+  (doublons, préfixes). **Plusieurs dictionnaires nommés** peuvent coexister (un par groupe ou par
+  exercice) : sélecteur sur les pages du parcours manuel, création et suppression, choix mémorisé
+  par un cookie.
 
 Usage prévu : un poste, un utilisateur, pas d'authentification.
 
@@ -61,11 +63,15 @@ Création (détruit une base `huffman` existante) :
 psql -U postgres -f database/database.sql
 ```
 
-Mise à niveau d'une base déjà en place, sans perte de données :
+Mise à niveau d'une base déjà en place, sans perte de données (dans l'ordre, chacun une seule fois) :
 
 ```
 psql -U postgres -d huffman -f database/upgrade-001-contraintes.sql
+psql -U postgres -d huffman -f database/upgrade-002-dictionnaires.sql
 ```
+
+Le second crée la table `dictionnaire`, rattache les entrées existantes à un dictionnaire « Principal »
+et rend l'unicité des caractères et des codes relative à chaque dictionnaire.
 
 ## Configuration
 
@@ -118,15 +124,16 @@ src/hery/itu/
              HuffmanFile (format binaire .huf), CodeStatistics (entropie, Kraft), ShannonFano,
              DictionaryValidator (règles d'admission),
              DictionaryEncoder / DictionaryDecoder (codage et décodage par dictionnaire)
-  base/      Database (connexion configurée par l'environnement), DictionaryRepository (table dico)
+  base/      Database (connexion configurée par l'environnement),
+             DictionaryRepository (tables dictionnaire et dico)
   servlet/   points d'entrée HTTP : /huffman, /compress, /decompress, /insertDictionary,
-             /clearDictionary, /encodeText, /decodeText
+             /clearDictionary, /dictionaries, /encodeText, /decodeText
   web/       filtres : page d'erreur applicative, contrôle d'origine des POST (CSRF)
   util/      Html : échappement et rendu des bits pour les vues
 web/
   index.jsp            accueil (seule JSP servie directement)
   WEB-INF/views/       vues servies par les servlets
-  WEB-INF/jspf/        fragments communs (entête + design system, navigation, pied, table du dictionnaire)
+  WEB-INF/jspf/        fragments communs (entête + design system, navigation, pied, table et sélecteur de dictionnaire)
   assets/              Tailwind 3.4.17 et D3 7.9.0 auto-hébergés
 lib/                   jars d'exécution ; lib/provided/ (fourni par Tomcat) ; lib/test/ (JUnit)
 database/              schéma et mise à niveau

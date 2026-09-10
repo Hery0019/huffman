@@ -1,0 +1,19 @@
+<%-- Sélecteur du dictionnaire courant. Attend les attributs dictionaries et currentDictionary, et une variable String pickerAction.
+     Ses variables sont à portée locale : le fragment peut être inclus dans n'importe quelle vue. --%>
+<%@ page pageEncoding="UTF-8" %>
+<% {
+    java.util.List<hery.itu.base.DictionaryRepository.Dictionary> pickerDictionaries =
+            (java.util.List<hery.itu.base.DictionaryRepository.Dictionary>) request.getAttribute("dictionaries");
+    hery.itu.base.DictionaryRepository.Dictionary pickerCurrent =
+            (hery.itu.base.DictionaryRepository.Dictionary) request.getAttribute("currentDictionary");
+    if (pickerCurrent != null && pickerDictionaries != null) { %>
+<form method="get" action="<%= ctx %>/<%= pickerAction %>" class="flex flex-wrap items-center gap-2">
+    <label for="d" class="label">Dictionnaire</label>
+    <select id="d" name="d" class="field w-auto h-9 py-1 pr-8 text-sm" onchange="this.form.submit()">
+        <% for (hery.itu.base.DictionaryRepository.Dictionary dictionary : pickerDictionaries) { %>
+            <option value="<%= dictionary.id() %>" <%= dictionary.id() == pickerCurrent.id() ? "selected" : "" %>><%= hery.itu.util.Html.esc(dictionary.name()) %></option>
+        <% } %>
+    </select>
+    <noscript><button type="submit" class="btn btn-secondary h-9 px-3 text-xs">Voir</button></noscript>
+</form>
+<% } } %>

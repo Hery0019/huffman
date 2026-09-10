@@ -21,7 +21,7 @@ public class HuffmanEncodeServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        DictionaryAttributes.load(repository, request);
+        DictionaryAttributes.load(repository, request, response);
         request.getRequestDispatcher(VIEW).forward(request, response);
     }
 
@@ -34,7 +34,7 @@ public class HuffmanEncodeServlet extends HttpServlet {
             return;
         }
 
-        Map<String, String> dictionary = DictionaryAttributes.load(repository, request);
+        Map<String, String> dictionary = DictionaryAttributes.load(repository, request, response);
         if (request.getAttribute(DictionaryAttributes.DB_ERROR) == null) {
             DictionaryEncoder.Result result = new DictionaryEncoder(dictionary).encode(text);
             request.setAttribute("submittedText", text);

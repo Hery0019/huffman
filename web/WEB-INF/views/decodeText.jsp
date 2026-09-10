@@ -11,6 +11,9 @@
     String submittedBits = (String) request.getAttribute("submittedBits");
     DictionaryDecoder.Result result = (DictionaryDecoder.Result) request.getAttribute("decodeResult");
     String dictionaryError = (String) request.getAttribute("dictionaryError");
+    String pickerAction = "decodeText";
+    hery.itu.base.DictionaryRepository.Dictionary currentDictionary =
+            (hery.itu.base.DictionaryRepository.Dictionary) request.getAttribute("currentDictionary");
 %>
 <%@ include file="/WEB-INF/jspf/head.jspf" %>
 <%@ include file="/WEB-INF/jspf/nav.jspf" %>
@@ -41,6 +44,8 @@
 <section class="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-8 items-start">
     <div class="space-y-6">
         <form action="<%= ctx %>/decodeText" method="post" class="card p-6">
+            <%@ include file="/WEB-INF/jspf/dictionaryPicker.jspf" %>
+            <% if (currentDictionary != null) { %><input type="hidden" name="d" value="<%= currentDictionary.id() %>"><% } %>
             <label for="bits" class="label">Suite de bits</label>
             <textarea id="bits" name="bits" rows="4" required spellcheck="false"
                       class="field mt-2 font-mono text-[15px] leading-relaxed tracking-[0.08em] resize-y"
@@ -91,7 +96,7 @@
 
     <div>
         <div class="flex items-baseline justify-between mb-3">
-            <h2 class="label">Dictionnaire</h2>
+            <h2 class="label">Dictionnaire<% if (currentDictionary != null) { %> <span class="normal-case tracking-normal text-muted">· <%= Html.esc(currentDictionary.name()) %></span><% } %></h2>
             <a href="<%= ctx %>/insertDictionary" class="text-sm">Modifier →</a>
         </div>
         <%@ include file="/WEB-INF/jspf/dictionaryTable.jspf" %>

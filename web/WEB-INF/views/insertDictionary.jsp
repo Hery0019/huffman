@@ -24,6 +24,12 @@
         errorMessage = "Ce code est le préfixe d'un code existant (ou l'inverse) : le texte ne serait plus décodable.";
     } else if ("database".equals(error)) {
         errorMessage = "Opération refusée par la base de données. Consultez le journal du serveur.";
+    } else if ("name_empty".equals(error)) {
+        errorMessage = "Donnez un nom au nouveau dictionnaire.";
+    } else if ("name_too_long".equals(error)) {
+        errorMessage = "Le nom du dictionnaire ne doit pas dépasser 50 caractères.";
+    } else if ("name_taken".equals(error)) {
+        errorMessage = "Un dictionnaire porte déjà ce nom.";
     } else if (error != null) {
         errorMessage = "Une erreur est survenue.";
     }
@@ -33,12 +39,19 @@
         successMessage = "Entrée ajoutée au dictionnaire.";
     } else if (request.getParameter("cleared") != null) {
         successMessage = "Dictionnaire vidé.";
+    } else if (request.getParameter("created") != null) {
+        successMessage = "Dictionnaire créé : il est maintenant sélectionné.";
+    } else if (request.getParameter("deleted") != null) {
+        successMessage = "Dictionnaire supprimé.";
     }
+    String pickerAction = "insertDictionary";
+    hery.itu.base.DictionaryRepository.Dictionary currentDictionary =
+            (hery.itu.base.DictionaryRepository.Dictionary) request.getAttribute("currentDictionary");
 %>
 <%@ include file="/WEB-INF/jspf/head.jspf" %>
 <%@ include file="/WEB-INF/jspf/nav.jspf" %>
 
-<div class="mb-8">
+<div class="mb-6">
     <p class="label">Parcours manuel</p>
     <h1 class="mt-2 text-3xl font-semibold tracking-tight">Dictionnaire de codes</h1>
     <p class="mt-3 text-muted max-w-prose">
@@ -46,6 +59,27 @@
         aucun code ne doit être le préfixe d'un autre — l'application le vérifie à l'ajout.
     </p>
 </div>
+
+<%-- Choix du dictionnaire courant, création, suppression --%>
+<% if (currentDictionary != null) { %>
+<div class="card px-5 py-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex flex-wrap items-center gap-4">
+        <%@ include file="/WEB-INF/jspf/dictionaryPicker.jspf" %>
+        <form action="<%= ctx %>/dictionaries" method="post" class="flex items-center gap-2">
+            <input type="hidden" name="action" value="create">
+            <input type="text" name="name" maxlength="50" required placeholder="Nouveau dictionnaire"
+                   class="field w-56 h-9 py-1 text-sm" autocomplete="off">
+            <button type="submit" class="btn btn-secondary h-9 px-3 text-xs">Créer</button>
+        </form>
+    </div>
+    <form action="<%= ctx %>/dictionaries" method="post"
+          onsubmit="return confirm('Supprimer le dictionnaire « <%= Html.esc(currentDictionary.name()).replace("'", "\\'") %> » et toutes ses entrées ?');">
+        <input type="hidden" name="action" value="delete">
+        <input type="hidden" name="d" value="<%= currentDictionary.id() %>">
+        <button type="submit" class="btn btn-danger h-9 px-3 text-xs">Supprimer ce dictionnaire</button>
+    </form>
+</div>
+<% } %>
 
 <% if (dbError) { %>
 <div role="alert" class="mb-6 rounded-lg border border-warn/30 bg-warn-soft text-warn px-4 py-3 text-sm">
@@ -75,6 +109,7 @@
 <section class="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-8 items-start">
     <div>
         <form action="<%= ctx %>/insertDictionary" method="post" class="card p-6">
+            <% if (currentDictionary != null) { %><input type="hidden" name="d" value="<%= currentDictionary.id() %>"><% } %>
             <label for="character" class="label">Caractère</label>
             <input id="character" name="character" type="text" maxlength="2" required autocomplete="off"
                    class="field mt-2 font-mono text-lg" placeholder="a">
@@ -90,13 +125,14 @@
 
         <form action="<%= ctx %>/clearDictionary" method="post" class="mt-4"
               onsubmit="return confirm('Vider tout le dictionnaire ? Cette action est irréversible.');">
+            <% if (currentDictionary != null) { %><input type="hidden" name="d" value="<%= currentDictionary.id() %>"><% } %>
             <button type="submit" class="btn btn-danger w-full" <%= dbError ? "disabled" : "" %>>Vider le dictionnaire</button>
         </form>
     </div>
 
     <div>
         <div class="flex items-baseline justify-between mb-3">
-            <h2 class="label">Entrées <span class="font-mono normal-case tracking-normal text-ink ml-1"><%= huffmanDictionary.size() %></span></h2>
+            <h2 class="label">Entrées <span class="font-mono normal-case tracking-normal text-ink ml-1"><%= huffmanDictionary.size() %></span><% if (currentDictionary != null) { %> <span class="normal-case tracking-normal text-muted">· <%= Html.esc(currentDictionary.name()) %></span><% } %></h2>
             <a href="<%= ctx %>/encodeText" class="text-sm">Coder un texte avec ce dictionnaire →</a>
         </div>
         <%@ include file="/WEB-INF/jspf/dictionaryTable.jspf" %>

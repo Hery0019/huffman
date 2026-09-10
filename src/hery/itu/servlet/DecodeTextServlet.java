@@ -21,7 +21,7 @@ public class DecodeTextServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        DictionaryAttributes.load(repository, request);
+        DictionaryAttributes.load(repository, request, response);
         request.getRequestDispatcher(VIEW).forward(request, response);
     }
 
@@ -36,7 +36,7 @@ public class DecodeTextServlet extends HttpServlet {
         // Les bits collés d'ailleurs sont souvent groupés par espaces ou retours à la ligne.
         bits = bits.replaceAll("\\s+", "");
 
-        Map<String, String> dictionary = DictionaryAttributes.load(repository, request);
+        Map<String, String> dictionary = DictionaryAttributes.load(repository, request, response);
         request.setAttribute("submittedBits", bits);
         if (request.getAttribute(DictionaryAttributes.DB_ERROR) == null) {
             try {

@@ -13,7 +13,7 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Parcours manuel : affichage et alimentation du dictionnaire (table {@code dico}). */
+/** Parcours manuel : affichage et alimentation du dictionnaire courant (table {@code dico}). */
 @WebServlet("/insertDictionary")
 public class HuffmanDictionaryServlet extends HttpServlet {
 
@@ -26,7 +26,7 @@ public class HuffmanDictionaryServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        DictionaryAttributes.load(repository, request);
+        DictionaryAttributes.load(repository, request, response);
         request.getRequestDispatcher(VIEW).forward(request, response);
     }
 
@@ -42,10 +42,14 @@ public class HuffmanDictionaryServlet extends HttpServlet {
 
         String page = request.getContextPath() + "/insertDictionary";
         try {
-            repository.insert(symbol, code);
-            response.sendRedirect(page + "?added=1");
-        } catch (DictionaryException e) {
-            response.sendRedirect(page + "?error=" + e.getProblem().name().toLowerCase(Locale.ROOT));
+            int dictionaryId = DictionaryAttributes.currentId(repository, request);
+            String target = page + "?d=" + dictionaryId;
+            try {
+                repository.insert(dictionaryId, symbol, code);
+                response.sendRedirect(target + "&added=1");
+            } catch (DictionaryException e) {
+                response.sendRedirect(target + "&error=" + e.getProblem().name().toLowerCase(Locale.ROOT));
+            }
         } catch (SQLException e) {
             LOG.log(Level.SEVERE, "Insertion dans le dictionnaire impossible", e);
             response.sendRedirect(page + "?error=database");
