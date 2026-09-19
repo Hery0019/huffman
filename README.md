@@ -28,16 +28,18 @@ Usage prévu : un poste, un utilisateur, pas d'authentification.
 
 ## Aperçu
 
-**Accueil** — saisie du texte, rappel des trois étapes de l'algorithme, décompression d'un fichier `.huf`.
+**Accueil** — saisie du texte, cas remarquables en un clic, rappel des trois étapes, décompression d'un fichier `.huf`.
 
-![Accueil : formulaire de saisie, les trois étapes, décompression](docs/screenshots/accueil.png)
+![Accueil : formulaire de saisie, cas remarquables, les trois étapes, décompression](docs/screenshots/accueil.png)
 
 **Résultat** — indicateurs de compression, contrôle de l'aller-retour, texte encodé (0 en bleu, 1 en terre cuite),
-taille réelle du fichier `.huf`, table des fréquences et codes, arbre de Huffman rejouable pas à pas.
+taille réelle du fichier `.huf`, entropie et somme de Kraft, codes de Huffman et de Shannon-Fano côte à côte,
+construction de l'arbre rejouable pas à pas, décodage pas à pas.
 
-![Résultat : indicateurs, texte encodé, fichier compressé, table des codes et arbre pas à pas](docs/screenshots/resultat.png)
+![Résultat : indicateurs, texte encodé, fichier compressé, théorie, table des codes, arbre pas à pas et décodage pas à pas](docs/screenshots/resultat.png)
 
-**Dictionnaire** — saisie d'un couple caractère / code, avec validation (doublons, préfixes) et messages explicites.
+**Dictionnaire** — choix du dictionnaire nommé, saisie d'un couple caractère / code avec validation (doublons, préfixes),
+messages explicites et somme de Kraft.
 
 ![Dictionnaire : formulaire d'ajout et table des entrées](docs/screenshots/dictionnaire.png)
 
